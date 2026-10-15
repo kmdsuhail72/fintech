@@ -1,0 +1,57 @@
+environment: dev
+migration:
+  enabled: false
+  image:
+    repository: ''
+    digest: ''
+  existingSecret: migration-secrets
+  serviceAccountName: migration
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 86400
+  rdsCa:
+    enabled: true
+    existingConfigMap: rds-ca
+  resources:
+    requests:
+      cpu: '250m'
+      memory: '256Mi'
+    limits:
+      cpu: '1'
+      memory: '512Mi'
+asteriq-web:
+  enabled: true
+  fullnameOverride: frontend
+  replicaCount: 1
+  env:
+    ASTERIQ_ENVIRONMENT: dev
+    API_UPSTREAM: http://api:3000
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+  scheduling:
+    zoneSpread: false
+asteriq-api:
+  enabled: true
+  fullnameOverride: api
+  replicaCount: 1
+  env:
+    ASTERIQ_ENVIRONMENT: dev
+    AI_SERVICE_URL: http://ai-service:8000
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+  scheduling:
+    zoneSpread: false
+asteriq-ai-service:
+  enabled: true
+  fullnameOverride: ai-service
+  replicaCount: 1
+  env:
+    ASTERIQ_ENVIRONMENT: dev
+    APP_ENV: development
+    RESEARCH_BACKEND_URL: http://api:3000/api/v1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+  scheduling:
+    zoneSpread: false

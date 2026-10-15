@@ -1,0 +1,14 @@
+# Pin a Helm chart whose appVersion matches the vendored v3.6.0 IAM policy.
+clusterName: REPLACE_CLUSTER_NAME
+region: REPLACE_REGION
+vpcId: REPLACE_VPC_ID
+replicaCount: 2
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_LOAD_BALANCER_IRSA_ROLE_ARN
+# Edge Terraform owns both WAF associations; avoid competing reconciliation.
+enableWaf: false
+enableWafv2: false
+enableShield: false

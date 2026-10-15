@@ -1,0 +1,37 @@
+# Copy into an ignored runtime directory per experiment. No credentials or tokens.
+run_id: REPLACE_UTC_TIMESTAMP
+experiment: api-pod-crash
+context: REPLACE_EXPLICIT_TEST_CONTEXT
+namespace: asteriq-staging
+operator: REPLACE_OWNER
+observer: REPLACE_OBSERVER
+status: not_run # pass, fail, aborted, not_run
+fault_started_utc: null
+fault_removed_utc: null
+service_recovered_utc: null
+recovery_seconds: null
+baseline:
+  deployment_generation: null
+  desired_replicas: null
+  ready_replicas: null
+  pod_uids_and_nodes: []
+  pdb_disruptions_allowed: null
+  hpa_current_and_desired: null
+  request_count: null
+  error_ratio: null
+  latency_p95_seconds: null
+evidence:
+  readiness_transition: null
+  endpoint_removal: null
+  replacement_pod_uid: null
+  replacement_node: null
+  replica_recovery: null
+  pdb_eviction_response: null
+  hpa_scale_up_and_down: null
+  alerts_pending_firing_resolved: []
+  receiver_delivery_utc: null
+  trace_ids: []
+  trade_duplicate_or_lost_orders: null
+  cleanup_verified: false
+  links: []
+findings_and_followups: []

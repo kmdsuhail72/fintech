@@ -1,0 +1,46 @@
+# Install a pinned prometheus-community/prometheus-adapter chart.
+prometheus:
+  url: http://asteriq-monitoring-prometheus.monitoring.svc
+  port: 9090
+rules:
+  default: false
+  custom:
+    - seriesQuery: 'asteriq_http_requests_total{namespace!="",pod!="",operation!="health"}'
+      resources:
+        overrides:
+          namespace: {resource: namespace}
+          pod: {resource: pod}
+      name:
+        matches: '^asteriq_http_requests_total$'
+        as: asteriq_http_requests_per_second
+      metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>,operation!="health"}[2m])) by (<<.GroupBy>>)'
+    - seriesQuery: 'asteriq_websocket_connections{namespace!="",pod!=""}'
+      resources:
+        overrides:
+          namespace: {resource: namespace}
+          pod: {resource: pod}
+      name:
+        matches: '^asteriq_websocket_connections$'
+        as: asteriq_websocket_connections
+      metricsQuery: 'max(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+    - seriesQuery: 'asteriq_ai_active_requests{namespace!="",pod!=""}'
+      resources:
+        overrides:
+          namespace: {resource: namespace}
+          pod: {resource: pod}
+      name:
+        matches: '^asteriq_ai_active_requests$'
+        as: asteriq_ai_active_requests
+      metricsQuery: 'max(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+  # Enable only once a shared queue actually exports this gauge. Multiple
+  # exporters reporting the same queue are deduplicated with max, not sum.
+  external:
+    - seriesQuery: 'asteriq_ai_queue_depth{namespace!="",queue="ai-requests"}'
+      resources:
+        overrides:
+          namespace: {resource: namespace}
+      name:
+        matches: '^asteriq_ai_queue_depth$'
+        as: asteriq_ai_queue_depth
+      metricsQuery: 'max(<<.Series>>{<<.LabelMatchers>>,queue="ai-requests"})'
+

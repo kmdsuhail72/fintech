@@ -1,0 +1,44 @@
+# Account-free rendering fixture. Zero digests and fake ARNs must never deploy.
+environment: production
+migration:
+  enabled: false
+asteriq-web:
+  image:
+    repository: 000000000000.dkr.ecr.ap-south-1.amazonaws.com/asteriq-production-eks/web
+    tag: ''
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  ingress:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: asteriq-production-eks-web
+      alb.ingress.kubernetes.io/security-groups: sg-00000000000000000
+      alb.ingress.kubernetes.io/manage-backend-security-group-rules: 'false'
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:000000000000:certificate/00000000-0000-0000-0000-000000000000
+    hosts:
+      - host: asteriq.demo.invalid
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts: [asteriq.demo.invalid]
+asteriq-api:
+  image:
+    repository: 000000000000.dkr.ecr.ap-south-1.amazonaws.com/asteriq-production-eks/api
+    tag: ''
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  env:
+    CORS_ORIGINS: https://asteriq.demo.invalid
+    AUTH_WEB_URL: https://asteriq.demo.invalid
+    AUTH_EMAIL_FROM: alerts@demo.invalid
+    TRUST_PROXY_HOPS: '3'
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::000000000000:role/asteriq-production-eks-api
+asteriq-ai-service:
+  image:
+    repository: 000000000000.dkr.ecr.ap-south-1.amazonaws.com/asteriq-production-eks/ai-service
+    tag: ''
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::000000000000:role/asteriq-production-eks-ai

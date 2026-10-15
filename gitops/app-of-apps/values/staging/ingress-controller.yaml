@@ -1,0 +1,9 @@
+clusterName: REPLACE_EKS_CLUSTER_NAME
+region: REPLACE_AWS_REGION
+vpcId: REPLACE_VPC_ID
+replicaCount: 2
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_ALB_CONTROLLER_IRSA_ROLE_ARN

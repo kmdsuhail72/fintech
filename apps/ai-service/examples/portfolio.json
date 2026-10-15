@@ -1,0 +1,18 @@
+{
+  "currency": "USD",
+  "cash": 10000,
+  "positions": [
+    {
+      "symbol": "AAPL",
+      "quantity": "10",
+      "average_cost": "140",
+      "current_price": "150"
+    },
+    {
+      "symbol": "MSFT",
+      "quantity": "5",
+      "average_cost": "400",
+      "current_price": "390"
+    }
+  ]
+}

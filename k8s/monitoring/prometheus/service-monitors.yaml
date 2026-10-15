@@ -1,0 +1,51 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: asteriq-api
+  namespace: monitoring
+  labels:
+    asteriq.ai/monitoring: enabled
+spec:
+  namespaceSelector:
+    matchNames:
+      - asteriq-dev
+      - asteriq-staging
+      - asteriq-production
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+      app.kubernetes.io/part-of: asteriq
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      honorLabels: false
+  sampleLimit: 10000
+  labelLimit: 20
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: asteriq-ai-service
+  namespace: monitoring
+  labels:
+    asteriq.ai/monitoring: enabled
+spec:
+  namespaceSelector:
+    matchNames:
+      - asteriq-dev
+      - asteriq-staging
+      - asteriq-production
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-service
+      app.kubernetes.io/part-of: asteriq
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      honorLabels: false
+  sampleLimit: 10000
+  labelLimit: 20

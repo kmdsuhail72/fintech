@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-service-config
+data:
+  RESEARCH_BACKEND_URL: http://api:3000/api/v1
+  NEWS_SENTIMENT_ENABLED: 'false'
+  OBSERVABILITY_ENABLED: 'true'
+  HF_HOME: /app/artifacts/huggingface
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTHONUNBUFFERED: '1'

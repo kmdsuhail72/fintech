@@ -1,0 +1,88 @@
+environment: dev
+asteriq-web:
+  fullnameOverride: frontend
+  replicaCount: 1
+  env:
+    API_UPSTREAM: http://api:3000
+    ASTERIQ_ENVIRONMENT: dev
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+  scheduling:
+    zoneSpread: false
+  image:
+    repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-dev/web
+    tag: REPLACE_RELEASE_TAG
+    digest: ''
+  rdsCa:
+    enabled: false
+    existingConfigMap: rds-ca
+  enabled: true
+asteriq-api:
+  fullnameOverride: api
+  replicaCount: 1
+  env:
+    ASTERIQ_ENVIRONMENT: dev
+    NODE_ENV: production
+    TRUST_PROXY_HOPS: '2'
+    CORS_ORIGINS: https://REPLACE_DEV_HOST
+    AUTH_WEB_URL: https://REPLACE_DEV_HOST
+    AUTH_EMAIL_FROM: REPLACE_DEV_SES_SENDER
+    AI_SERVICE_URL: http://ai-service:8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: '1'
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+  scheduling:
+    zoneSpread: false
+  image:
+    repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-dev/api
+    tag: REPLACE_RELEASE_TAG
+    digest: ''
+  rdsCa:
+    enabled: true
+    existingConfigMap: rds-ca
+  enabled: true
+asteriq-ai-service:
+  fullnameOverride: ai-service
+  replicaCount: 1
+  env:
+    ASTERIQ_ENVIRONMENT: dev
+    APP_ENV: development
+    RESEARCH_BACKEND_URL: http://api:3000/api/v1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: '2'
+      memory: 2Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+  scheduling:
+    zoneSpread: false
+  image:
+    repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-dev/ai-service
+    tag: REPLACE_RELEASE_TAG
+    digest: ''
+  rdsCa:
+    enabled: true
+    existingConfigMap: rds-ca
+  enabled: true

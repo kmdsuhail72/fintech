@@ -1,0 +1,118 @@
+name: Production Deployment
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Main workflow run ID containing the release manifest
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      ECR_PREFIX: ${{ vars.ECR_PREFIX || 'asteriq' }}
+      RELEASE_RUN_ID: ${{ inputs.run_id }}
+      GH_TOKEN: ${{ github.token }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_WEB_SERVICE: ${{ vars.ECS_WEB_SERVICE }}
+      ECS_API_SERVICE: ${{ vars.ECS_API_SERVICE }}
+      ECS_AI_SERVICE: ${{ vars.ECS_AI_SERVICE }}
+      ECS_MIGRATION_TASK_DEFINITION: ${{ vars.ECS_MIGRATION_TASK_DEFINITION }}
+      ECS_WEB_CONTAINER: ${{ vars.ECS_WEB_CONTAINER || 'web' }}
+      ECS_API_CONTAINER: ${{ vars.ECS_API_CONTAINER || 'api' }}
+      ECS_AI_CONTAINER: ${{ vars.ECS_AI_CONTAINER || 'ai-service' }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Verify release came from a successful main push in this repository
+        id: trusted
+        run: python scripts/ci/release.py verify-run
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: release-manifest
+          path: release
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify complete immutable release manifest
+        env:
+          EXPECTED_COMMIT: ${{ steps.trusted.outputs.commit }}
+          EXPECTED_RUN_ATTEMPT: ${{ steps.trusted.outputs.attempt }}
+        run: python scripts/ci/release.py validate
+      - name: AWS authentication via production OIDC role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+          role-session-name: asteriq-deploy-${{ github.run_id }}
+          unset-current-credentials: true
+      - name: Log in to private ECR for deployment-time rescanning
+        run: aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+      - name: Resolve image scan inputs
+        id: images
+        run: python scripts/ci/release.py image-outputs
+      - name: Rescan web release
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          image-ref: ${{ steps.images.outputs.web }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          format: json
+          output: production-security-web.json
+          timeout: 10m
+      - name: Rescan API release
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          skip-setup-trivy: 'true'
+          image-ref: ${{ steps.images.outputs.api }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          format: json
+          output: production-security-api.json
+          timeout: 10m
+      - name: Rescan AI release
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          skip-setup-trivy: 'true'
+          image-ref: ${{ steps.images.outputs.ai-service }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          format: json
+          output: production-security-ai-service.json
+          timeout: 10m
+      - name: Migrate and roll out verified image digests to ECS
+        run: python scripts/ci/deploy_ecs.py release/release.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: production-security-and-deployment
+          path: |
+            production-security-*.json
+            deployment-result.json
+          if-no-files-found: warn
+          retention-days: 30

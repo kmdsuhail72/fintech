@@ -1,0 +1,25 @@
+migration:
+  enabled: true
+  image:
+    repository: ''
+    digest: ''
+  existingSecret: migration-secrets
+  serviceAccountName: migration
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 86400
+  rdsCa:
+    enabled: true
+    existingConfigMap: rds-ca
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: '1'
+      memory: 512Mi
+asteriq-api:
+  enabled: true
+  image:
+    repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-production/api
+    tag: REPLACE_RELEASE_TAG
+    digest: REPLACE_IMMUTABLE_SHA256_DIGEST

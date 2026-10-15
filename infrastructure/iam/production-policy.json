@@ -1,0 +1,81 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchCheckLayerAvailability"
+      ],
+      "Resource": [
+        "arn:aws:ecr:REPLACE_REGION:REPLACE_ACCOUNT_ID:repository/REPLACE_PREFIX/web",
+        "arn:aws:ecr:REPLACE_REGION:REPLACE_ACCOUNT_ID:repository/REPLACE_PREFIX/api",
+        "arn:aws:ecr:REPLACE_REGION:REPLACE_ACCOUNT_ID:repository/REPLACE_PREFIX/ai-service"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ecs:DescribeServices", "ecs:UpdateService"],
+      "Resource": [
+        "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:service/REPLACE_CLUSTER/REPLACE_WEB_SERVICE",
+        "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:service/REPLACE_CLUSTER/REPLACE_API_SERVICE",
+        "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:service/REPLACE_CLUSTER/REPLACE_AI_SERVICE"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ecs:DescribeTaskDefinition", "ecs:ListTagsForResource", "ecs:TagResource"],
+      "Resource": [
+        "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:task-definition/REPLACE_WEB_FAMILY:*",
+        "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:task-definition/REPLACE_API_FAMILY:*",
+        "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:task-definition/REPLACE_AI_FAMILY:*",
+        "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:task-definition/REPLACE_MIGRATION_FAMILY:*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ecs:DescribeTasks", "ecs:StopTask"],
+      "Resource": "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:task/REPLACE_CLUSTER/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ecs:RegisterTaskDefinition",
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": [
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_WEB_TASK_ROLE",
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_WEB_EXECUTION_ROLE",
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_API_TASK_ROLE",
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_API_EXECUTION_ROLE",
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_AI_TASK_ROLE",
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_AI_EXECUTION_ROLE",
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_MIGRATION_TASK_ROLE",
+        "arn:aws:iam::REPLACE_ACCOUNT_ID:role/REPLACE_MIGRATION_EXECUTION_ROLE"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "ecs-tasks.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ecs:RunTask",
+      "Resource": "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:task-definition/REPLACE_MIGRATION_FAMILY:*",
+      "Condition": {
+        "ArnEquals": {
+          "ecs:cluster": "arn:aws:ecs:REPLACE_REGION:REPLACE_ACCOUNT_ID:cluster/REPLACE_CLUSTER"
+        }
+      }
+    }
+  ]
+}

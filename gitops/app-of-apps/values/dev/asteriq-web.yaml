@@ -1,0 +1,24 @@
+fullnameOverride: frontend
+replicaCount: 1
+env:
+  API_UPSTREAM: http://api:3000
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+scheduling:
+  zoneSpread: false
+image:
+  repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-dev/web
+  tag: REPLACE_RELEASE_TAG
+  digest: REPLACE_IMMUTABLE_SHA256_DIGEST
+rdsCa:
+  enabled: false
+  existingConfigMap: rds-ca

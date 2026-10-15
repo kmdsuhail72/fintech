@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: logging-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '-10'
+spec:
+  project: asteriq-platform-dev
+  sources:
+  - repoURL: https://grafana-community.github.io/helm-charts
+    chart: loki
+    targetRevision: REPLACE_APPROVED_CHART_VERSION
+    helm:
+      releaseName: loki
+      valueFiles:
+      - $values/app-of-apps/values/dev/logging.yaml
+  - repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
+    targetRevision: REPLACE_APPROVED_ALLOY_CHART_VERSION
+    helm:
+      releaseName: asteriq-alloy
+      valueFiles:
+      - $values/app-of-apps/values/dev/alloy.yaml
+  - repoURL: https://github.com/REPLACE_OWNER/REPLACE_APPLICATION_REPOSITORY.git
+    targetRevision: REPLACE_APPROVED_APPLICATION_COMMIT
+    path: k8s/monitoring/loki
+  - repoURL: https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+    targetRevision: REPLACE_IMMUTABLE_VALUES_COMMIT
+    ref: values
+  destination:
+    server: https://REPLACE_DEVELOPMENT_EKS_API_SERVER
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=false
+    - FailOnSharedResource=true
+    - PruneLast=true
+    - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    automated:
+      enabled: true
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+  revisionHistoryLimit: 10

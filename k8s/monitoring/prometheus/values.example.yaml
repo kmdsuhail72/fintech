@@ -1,0 +1,89 @@
+fullnameOverride: asteriq-monitoring
+grafana:
+  enabled: false
+prometheus:
+  prometheusSpec:
+    replicas: 2
+    retention: 45d
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: '2'
+        memory: 4Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: REPLACE_MONITORING_STORAGE_CLASS
+          resources:
+            requests:
+              storage: 50Gi
+    serviceMonitorSelector:
+      matchLabels: &id001
+        asteriq.ai/monitoring: enabled
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelector:
+      matchLabels: *id001
+    ruleSelectorNilUsesHelmValues: false
+    externalLabels:
+      cluster: REPLACE_EKS_CLUSTER_NAME
+      environment: REPLACE_ENVIRONMENT
+    additionalAlertRelabelConfigs:
+      - action: labeldrop
+        regex: prometheus_replica
+alertmanager:
+  alertmanagerSpec:
+    replicas: 2
+    configSecret: asteriq-alertmanager-config
+    secrets:
+      - asteriq-notification-credentials
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: REPLACE_MONITORING_STORAGE_CLASS
+          resources:
+            requests:
+              storage: 2Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+  useExistingSecret: true
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+kubelet:
+  enabled: true
+commonLabels:
+  asteriq.ai/monitoring: enabled
+prometheus-node-exporter:
+  prometheus:
+    monitor:
+      enabled: true
+      additionalLabels:
+        asteriq.ai/monitoring: enabled
+kube-state-metrics:
+  prometheus:
+    monitor:
+      enabled: true
+      additionalLabels:
+        asteriq.ai/monitoring: enabled
+defaultRules:
+  disabled:
+    KubePodCrashLooping: true
+    KubeNodeNotReady: true

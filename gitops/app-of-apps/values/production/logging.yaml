@@ -1,0 +1,57 @@
+fullnameOverride: loki
+deploymentMode: Distributed
+loki:
+  auth_enabled: true
+  commonConfig:
+    replication_factor: 3
+  schemaConfig:
+    configs:
+      - from: '2026-01-01'
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: asteriq_index_
+          period: 24h
+  storage:
+    type: s3
+    bucketNames:
+      chunks: REPLACE_LOKI_CHUNKS_BUCKET
+      ruler: REPLACE_LOKI_RULER_BUCKET
+      admin: REPLACE_LOKI_ADMIN_BUCKET
+    s3:
+      region: REPLACE_AWS_REGION
+  limits_config:
+    retention_period: 2160h
+  compactor:
+    retention_enabled: true
+    delete_request_store: s3
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_LOKI_S3_ROLE_ARN
+ingester:
+  replicas: 3
+distributor:
+  replicas: 2
+querier:
+  replicas: 2
+queryFrontend:
+  replicas: 2
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+singleBinary:
+  replicas: 0
+gateway:
+  enabled: true
+minio:
+  enabled: false
+compactor:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: REPLACE_LOG_STORAGE_CLASS

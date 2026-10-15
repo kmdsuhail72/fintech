@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: asteriq-workloads
+  namespace: monitoring
+  labels:
+    release: monitoring
+    asteriq.ai/monitoring: enabled
+spec:
+  groups:
+    - name: asteriq.business
+      rules:
+        - record: asteriq:trades_per_minute
+          expr: sum(rate(asteriq_trades_total[5m])) * 60
+        - record: asteriq:failed_orders_per_minute
+          expr: sum(rate(asteriq_failed_orders_total[5m])) * 60
+        - record: asteriq:pod_cpu_cores
+          expr: sum by (namespace,pod) (rate(container_cpu_usage_seconds_total{namespace=~"asteriq-(dev|staging|production)",container!="",container!="POD"}[5m]))
+        - record: asteriq:pod_memory_bytes
+          expr: sum by (namespace,pod) (container_memory_working_set_bytes{namespace=~"asteriq-(dev|staging|production)",container!="",container!="POD"})

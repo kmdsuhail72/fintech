@@ -1,0 +1,16 @@
+{
+  "cluster": [],
+  "indices": [
+    {
+      "names": [
+        "asteriq-*-application-*",
+        "asteriq-*-security-*",
+        "asteriq-*-trading-*",
+        "asteriq-*-ai-*"
+      ],
+      "privileges": ["create_doc", "auto_configure"]
+    }
+  ],
+  "applications": [],
+  "run_as": []
+}

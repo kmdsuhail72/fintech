@@ -1,0 +1,22 @@
+account_id = "000000000000"
+region = "ap-south-1"
+environment = "production"
+azs = ["ap-south-1a", "ap-south-1b", "ap-south-1c"]
+vpc_cidr = "10.80.0.0/16"
+kubernetes_version = "REPLACE_SUPPORTED_EKS_VERSION"
+node_ami_release_version = "REPLACE_COMPATIBLE_AL2023_RELEASE"
+addon_versions = {
+  vpc-cni = "REPLACE_PINNED_VERSION"
+  coredns = "REPLACE_PINNED_VERSION"
+  kube-proxy = "REPLACE_PINNED_VERSION"
+  aws-ebs-csi-driver = "REPLACE_PINNED_VERSION"
+  amazon-cloudwatch-observability = "REPLACE_PINNED_VERSION"
+}
+deployment_role_arn = "arn:aws:iam::000000000000:role/asteriq-eks-deployment"
+administrator_role_arn = "arn:aws:iam::000000000000:role/asteriq-eks-break-glass"
+zone_id = "REPLACE_ROUTE53_ZONE_ID"
+domain_name = "asteriq.example.com"
+ses_domain = "example.com"
+ses_from_address = "alerts@example.com"
+db_engine_version = "REPLACE_AVAILABLE_POSTGRESQL_16_MINOR"
+# REDIS token supplied as ephemeral TF_VAR_redis_auth_token, never in this file.

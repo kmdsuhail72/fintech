@@ -1,0 +1,3 @@
+# Install alongside requirements.txt for the AI-generated research assistant.
+langchain-core==1.6.9
+langchain-openai==1.7.0

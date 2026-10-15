@@ -1,0 +1,11 @@
+apiVersion: v2
+name: asteriq-web
+description: Asteriq AI frontend application chart
+type: application
+version: 0.1.1
+appVersion: 0.1.0
+kubeVersion: '>=1.31.0-0'
+keywords:
+  - asteriq
+  - trading
+  - frontend

@@ -1,0 +1,46 @@
+{
+  "name": "asteriq-ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web,ai \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:ai\"",
+    "dev:api": "npm run dev --workspace @asteriq/api",
+    "dev:web": "npm run dev --workspace @asteriq/web",
+    "dev:mobile": "npm run start --workspace @asteriq/mobile",
+    "dev:ai": "python -m uvicorn app.main:app --reload --app-dir apps/ai-service --host 0.0.0.0 --port 8000",
+    "build": "npm run build --workspace @asteriq/types && npm run build --workspace @asteriq/utils && npm run build --workspace @asteriq/ui && npm run build --workspace @asteriq/api && npm run build --workspace @asteriq/web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspace @asteriq/api && npm run test --workspace @asteriq/web && npm run test --workspace @asteriq/mobile",
+    "test:docker": "node --test scripts/tests/docker-config.test.mjs scripts/tests/migrations.test.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "typecheck": "npm run build --workspace @asteriq/types && npm run build --workspace @asteriq/utils && npm run build --workspace @asteriq/ui && npm run typecheck --workspace @asteriq/types && npm run typecheck --workspace @asteriq/utils && npm run typecheck --workspace @asteriq/ui && npm run typecheck --workspace @asteriq/api && npm run typecheck --workspace @asteriq/web && npm run typecheck --workspace @asteriq/mobile",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run build",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.23.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "~5.8.3"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "overrides": {
+    "shell-quote": "^1.11.0"
+  }
+}

@@ -1,0 +1,49 @@
+fullnameOverride: frontend
+replicaCount: 2
+env:
+  API_UPSTREAM: http://api:3000
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 65
+  targetMemoryUtilizationPercentage: 80
+scheduling:
+  zoneSpread: true
+image:
+  repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-production/web
+  tag: REPLACE_RELEASE_TAG
+  digest: REPLACE_IMMUTABLE_SHA256_DIGEST
+rdsCa:
+  enabled: false
+  existingConfigMap: rds-ca
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: REPLACE_ACM_CERTIFICATE_ARN
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/success-codes: '200'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=180
+    alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=30
+  hosts:
+  - host: asteriq.example.com
+    paths:
+    - path: /
+      pathType: Prefix
+  tls:
+  - hosts:
+    - asteriq.example.com

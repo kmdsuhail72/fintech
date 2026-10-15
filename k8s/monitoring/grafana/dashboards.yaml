@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-asteriq-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: '1'
+data:
+  asteriq-workloads.json: "{\n  \"title\": \"Asteriq Kubernetes workloads\",\n  \"\
+    uid\": \"asteriq-workloads\",\n  \"schemaVersion\": 39,\n  \"version\": 1,\n \
+    \ \"refresh\": \"30s\",\n  \"time\": {\n    \"from\": \"now-1h\",\n    \"to\"\
+    : \"now\"\n  },\n  \"panels\": [\n    {\n      \"id\": 1,\n      \"title\": \"\
+    Ready replicas\",\n      \"type\": \"timeseries\",\n      \"gridPos\": {\n   \
+    \     \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\": 0\n   \
+    \   },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"targets\": [\n        {\n          \"\
+    refId\": \"A\",\n          \"expr\": \"kube_deployment_status_replicas_available{namespace=~\\\
+    \"asteriq-.*\\\"}\",\n          \"legendFormat\": \"{{namespace}} / {{deployment}}\"\
+    \n        }\n      ]\n    },\n    {\n      \"id\": 2,\n      \"title\": \"Container\
+    \ restarts (15m)\",\n      \"type\": \"timeseries\",\n      \"gridPos\": {\n \
+    \       \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 0\n\
+    \      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n      \
+    \  \"uid\": \"prometheus\"\n      },\n      \"targets\": [\n        {\n      \
+    \    \"refId\": \"A\",\n          \"expr\": \"sum by(namespace) (increase(kube_pod_container_status_restarts_total{namespace=~\\\
+    \"asteriq-.*\\\"}[15m]))\"\n        }\n      ]\n    }\n  ]\n}"

@@ -1,0 +1,10 @@
+asteriq-api:
+  env:
+    OTEL_ENABLED: 'true'
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://asteriq-otel.monitoring.svc:4318/v1/traces
+    OTEL_TRACE_SAMPLE_RATIO: '0.1'
+asteriq-ai-service:
+  env:
+    OTEL_ENABLED: 'true'
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://asteriq-otel.monitoring.svc:4318/v1/traces
+    OTEL_TRACE_SAMPLE_RATIO: '0.1'

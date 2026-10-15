@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: asteriq-root-production
+  namespace: argocd
+spec:
+  sourceRepos:
+  - https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+  destinations:
+  - server: https://kubernetes.default.svc
+    namespace: argocd
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+  - group: argoproj.io
+    kind: Application

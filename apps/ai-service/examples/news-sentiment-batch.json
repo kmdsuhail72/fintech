@@ -1,0 +1,19 @@
+{
+  "articles": [
+    {
+      "symbol": "AAPL",
+      "headline": "Apple reports higher earnings and revenue",
+      "articleSummary": "Apple reported revenue growth and higher quarterly profits. Management raised its full-year earnings guidance."
+    },
+    {
+      "symbol": "MSFT",
+      "headline": "Company reports lower profit as costs rise",
+      "articleSummary": "Quarterly profit declined and revenue missed expectations. Management lowered its outlook."
+    },
+    {
+      "symbol": "NVDA",
+      "headline": "Company announces annual shareholder meeting",
+      "articleSummary": "The company scheduled its annual shareholder meeting for next month. Shareholders will vote on routine board appointments."
+    }
+  ]
+}

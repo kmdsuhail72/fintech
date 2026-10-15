@@ -1,0 +1,158 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: REPLACE_SMTP_HOST:587
+  smtp_from: alerts@example.invalid
+  smtp_auth_username: REPLACE_SMTP_USERNAME
+  smtp_auth_password_file: /etc/alertmanager/secrets/asteriq-notification-credentials/smtp-password
+  smtp_require_tls: true
+route:
+  receiver: warning
+  group_by:
+  - cluster
+  - environment
+  - namespace
+  - service
+  - alertname
+  - severity
+  group_wait: 45s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+  - receiver: 'null'
+    matchers:
+    - alertname=~"Watchdog|InfoInhibitor"
+  - receiver: warning
+    matchers:
+    - alert_family="slo-burn"
+    group_by:
+    - cluster
+    - environment
+    - namespace
+    - service
+    - slo
+    - severity
+    routes:
+    - receiver: critical
+      matchers:
+      - severity="critical"
+      group_wait: 30s
+      repeat_interval: 1h
+    - receiver: info
+      matchers:
+      - severity="info"
+      group_wait: 5m
+      repeat_interval: 24h
+  - receiver: critical
+    matchers:
+    - severity="critical"
+    group_wait: 30s
+    repeat_interval: 1h
+  - receiver: info
+    matchers:
+    - severity="info"
+    group_wait: 5m
+    group_interval: 30m
+    repeat_interval: 24h
+receivers:
+- name: critical
+  email_configs:
+  - to: REPLACE_OPERATIONS_EMAIL@example.invalid
+    send_resolved: true
+    headers:
+      Subject: '[{{ .Status | toUpper }}][{{ .CommonLabels.severity }}][{{ .CommonLabels.environment
+        }}] {{ .CommonLabels.alertname }}'
+  msteamsv2_configs:
+  - webhook_url_file: /etc/alertmanager/secrets/asteriq-notification-credentials/teams-webhook
+    send_resolved: true
+    title: '[{{ .Status | toUpper }}][{{ .CommonLabels.environment }}] {{ .CommonLabels.alertname
+      }}'
+    text: '{{ range .Alerts }}{{ .Labels.namespace }} {{ .Labels.service }} {{ .Labels.pod
+      }} {{ .Labels.instance }}: {{ .Annotations.summary }}
+
+      {{ end }}'
+- name: warning
+  email_configs:
+  - to: REPLACE_OPERATIONS_EMAIL@example.invalid
+    send_resolved: true
+    headers:
+      Subject: '[{{ .Status | toUpper }}][{{ .CommonLabels.severity }}][{{ .CommonLabels.environment
+        }}] {{ .CommonLabels.alertname }}'
+  msteamsv2_configs:
+  - webhook_url_file: /etc/alertmanager/secrets/asteriq-notification-credentials/teams-webhook
+    send_resolved: true
+    title: '[{{ .Status | toUpper }}][{{ .CommonLabels.environment }}] {{ .CommonLabels.alertname
+      }}'
+    text: '{{ range .Alerts }}{{ .Labels.namespace }} {{ .Labels.service }} {{ .Labels.pod
+      }} {{ .Labels.instance }}: {{ .Annotations.summary }}
+
+      {{ end }}'
+- name: info
+  msteamsv2_configs:
+  - webhook_url_file: /etc/alertmanager/secrets/asteriq-notification-credentials/teams-webhook
+    send_resolved: true
+    title: '[{{ .Status | toUpper }}][info][{{ .CommonLabels.environment }}] {{ .CommonLabels.alertname
+      }}'
+    text: '{{ range .Alerts }}{{ .Labels.namespace }} {{ .Labels.service }} {{ .Labels.pod
+      }} {{ .Labels.instance }}: {{ .Annotations.summary }}{{ "\n" }}{{ end }}'
+  email_configs:
+  - to: REPLACE_OPERATIONS_EMAIL@example.invalid
+    send_resolved: true
+    headers:
+      Subject: '[{{ .Status | toUpper }}][{{ .CommonLabels.severity }}][{{ .CommonLabels.environment
+        }}] {{ .CommonLabels.alertname }}'
+- name: 'null'
+inhibit_rules:
+- source_matchers:
+  - severity="critical"
+  - alert_family=~".+"
+  target_matchers:
+  - severity=~"warning|info"
+  - alert_family=~".+"
+  equal:
+  - cluster
+  - environment
+  - namespace
+  - service
+  - alert_family
+  - slo
+  - instance
+  - pod
+  - load_balancer
+  - job
+  - node
+  - deployment
+  - container
+  - operation
+  - mountpoint
+  - device
+- source_matchers:
+  - alertname="AsteriqNodeUnavailable"
+  - node=~".+"
+  target_matchers:
+  - alertname=~"AsteriqPodRestartsIncreasing|AsteriqPodCrashLoopBackOff"
+  - node=~".+"
+  equal:
+  - cluster
+  - environment
+  - node
+- source_matchers:
+  - alertname="AsteriqPodCrashLoopBackOff"
+  target_matchers:
+  - alertname="AsteriqPodRestartsIncreasing"
+  equal:
+  - cluster
+  - environment
+  - namespace
+  - pod
+- source_matchers:
+  - severity="warning"
+  - alert_family="slo-burn"
+  target_matchers:
+  - severity="info"
+  - alert_family="slo-burn"
+  equal:
+  - cluster
+  - environment
+  - namespace
+  - service
+  - slo

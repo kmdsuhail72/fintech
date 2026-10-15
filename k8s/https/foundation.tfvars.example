@@ -1,0 +1,3 @@
+# Merge with foundation deployment inputs; do not use as a complete tfvars file.
+domain_name = "app.asteriq.ai"
+additional_domain_names = ["api.asteriq.ai"]

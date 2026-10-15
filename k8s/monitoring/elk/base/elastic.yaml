@@ -1,0 +1,70 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: asteriq-logs
+  namespace: monitoring
+spec:
+  version: REPLACE_ELASTIC_VERSION
+  nodeSets:
+    - name: data
+      count: 3
+      config:
+        node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              resources:
+                requests:
+                  cpu: '1'
+                  memory: 4Gi
+                limits:
+                  cpu: '2'
+                  memory: 4Gi
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels: &id001
+                        elasticsearch.k8s.elastic.co/cluster-name: asteriq-logs
+                    topologyKey: kubernetes.io/hostname
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels: *id001
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: REPLACE_ELASTIC_STORAGE_CLASS
+            resources:
+              requests:
+                storage: 50Gi
+---
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: asteriq-kibana
+  namespace: monitoring
+spec:
+  version: REPLACE_ELASTIC_VERSION
+  count: 2
+  elasticsearchRef:
+    name: asteriq-logs
+  podTemplate:
+    spec:
+      containers:
+        - name: kibana
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi

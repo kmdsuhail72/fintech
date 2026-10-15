@@ -1,0 +1,477 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: asteriq-service-alerts
+  namespace: monitoring
+  labels:
+    asteriq.ai/monitoring: enabled
+spec:
+  groups:
+    - name: asteriq.service.alerts
+      rules:
+        - alert: AsteriqAPI5xxWarning
+          expr:
+            sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"5.."}[5m]))
+            / clamp_min(sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health"}[5m])),0.001)
+            > 0.02 and sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health"}[5m]))
+            > 0.1
+          for: 5m
+          labels:
+            severity: warning
+            service: api
+            alert_family: api-errors
+            owner: asteriq
+          annotations:
+            summary: API 5xx ratio exceeds 2%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqAPI5xxCritical
+          expr:
+            sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"5.."}[5m]))
+            / clamp_min(sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health"}[5m])),0.001)
+            > 0.05 and sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health"}[5m]))
+            > 0.1
+          for: 5m
+          labels:
+            severity: critical
+            service: api
+            alert_family: api-errors
+            owner: asteriq
+          annotations:
+            summary: API 5xx ratio exceeds 5%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqAPILatencyHigh
+          expr:
+            histogram_quantile(0.95,sum by(le,namespace)(rate(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!="health"}[5m])))
+            > 1
+          for: 10m
+          labels:
+            severity: warning
+            service: api
+            alert_family: api-latency
+            owner: asteriq
+          annotations:
+            summary: API p95 exceeds 1 second (includes research)
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPodRestartsIncreasing
+          expr:
+            (increase(kube_pod_container_status_restarts_total{namespace=~"asteriq-(dev|staging|production)"}[10m])
+            > 0) * on(namespace,pod) group_left(node) max by(namespace,pod,node)(kube_pod_info)
+          for: 2m
+          labels:
+            severity: warning
+            service: kubernetes
+            alert_family: pod-restarts
+            owner: asteriq
+          annotations:
+            summary: Pod container restart count is increasing
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPodCrashLoopBackOff
+          expr:
+            (kube_pod_container_status_waiting_reason{namespace=~"asteriq-(dev|staging|production)",reason="CrashLoopBackOff"}
+            == 1) * on(namespace,pod) group_left(node) max by(namespace,pod,node)(kube_pod_info)
+          for: 3m
+          labels:
+            severity: critical
+            service: kubernetes
+            alert_family: pod-crashloop
+            owner: asteriq
+          annotations:
+            summary: Pod is in CrashLoopBackOff
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqNodeCPUWarning
+          expr: 1 - avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) >
+            0.8
+          for: 10m
+          labels:
+            severity: warning
+            service: kubernetes
+            alert_family: node-cpu
+            owner: asteriq
+          annotations:
+            summary: Node CPU exceeds 80%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqNodeCPUCritical
+          expr: 1 - avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) >
+            0.95
+          for: 10m
+          labels:
+            severity: critical
+            service: kubernetes
+            alert_family: node-cpu
+            owner: asteriq
+          annotations:
+            summary: Node CPU exceeds 95%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqNodeMemoryWarning
+          expr: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes > 0.85
+          for: 10m
+          labels:
+            severity: warning
+            service: kubernetes
+            alert_family: node-memory
+            owner: asteriq
+          annotations:
+            summary: Node memory exceeds 85%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqNodeMemoryCritical
+          expr: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes > 0.95
+          for: 10m
+          labels:
+            severity: critical
+            service: kubernetes
+            alert_family: node-memory
+            owner: asteriq
+          annotations:
+            summary: Node memory exceeds 95%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPodCPUHigh
+          expr:
+            (sum by(namespace,pod)(rate(container_cpu_usage_seconds_total{namespace=~"asteriq-(dev|staging|production)",container!="",container!="POD"}[5m]))
+            / sum by(namespace,pod)(kube_pod_container_resource_limits{namespace=~"asteriq-(dev|staging|production)",resource="cpu"})
+            > 0.8) and on(namespace,pod) (sum by(namespace,pod)(kube_pod_container_resource_limits{namespace=~"asteriq-(dev|staging|production)",resource="cpu"})
+            > 0)
+          for: 10m
+          labels:
+            severity: warning
+            service: kubernetes
+            alert_family: pod-cpu
+            owner: asteriq
+          annotations:
+            summary: Pod CPU exceeds 80% of configured limits
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPodMemoryHigh
+          expr:
+            (sum by(namespace,pod)(container_memory_working_set_bytes{namespace=~"asteriq-(dev|staging|production)",container!="",container!="POD"})
+            / sum by(namespace,pod)(kube_pod_container_resource_limits{namespace=~"asteriq-(dev|staging|production)",resource="memory"})
+            > 0.85) and on(namespace,pod) (sum by(namespace,pod)(kube_pod_container_resource_limits{namespace=~"asteriq-(dev|staging|production)",resource="memory"})
+            > 0)
+          for: 10m
+          labels:
+            severity: warning
+            service: kubernetes
+            alert_family: pod-memory
+            owner: asteriq
+          annotations:
+            summary: Pod memory exceeds 85% of configured limits
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqAIUnavailable
+          expr:
+            (max by(namespace)(kube_deployment_spec_replicas{namespace=~"asteriq-(dev|staging|production)",deployment="ai-service"})
+            > 0) unless on(namespace) (max by(namespace)(up{namespace=~"asteriq-(dev|staging|production)",service="ai-service"}
+            == 1))
+          for: 3m
+          labels:
+            severity: critical
+            service: ai-service
+            alert_family: ai-availability
+            owner: asteriq
+          annotations:
+            summary: No healthy discovered AI service scrape target
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqRedisUnavailable
+          expr:
+            min by(namespace)(asteriq_redis_healthy{namespace=~"asteriq-(dev|staging|production)"})
+            == 0
+          for: 2m
+          labels:
+            severity: critical
+            service: redis
+            alert_family: redis-availability
+            owner: asteriq
+          annotations:
+            summary: API Redis probe failed
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPostgresConnectionsWarning
+          expr: sum by(job,instance)(pg_stat_database_numbackends) / on(job,instance)
+            pg_settings_max_connections > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            service: postgres
+            alert_family: postgres-connections
+            owner: asteriq
+          annotations:
+            summary: PostgreSQL connection utilization exceeds 80%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPostgresConnectionsCritical
+          expr: sum by(job,instance)(pg_stat_database_numbackends) / on(job,instance)
+            pg_settings_max_connections > 0.9
+          for: 5m
+          labels:
+            severity: critical
+            service: postgres
+            alert_family: postgres-connections
+            owner: asteriq
+          annotations:
+            summary: PostgreSQL connection utilization exceeds 90%
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPostgresUnavailable
+          expr: pg_up == 0
+          for: 3m
+          labels:
+            severity: critical
+            service: postgres
+            alert_family: postgres-availability
+            owner: asteriq
+          annotations:
+            summary: PostgreSQL exporter cannot reach its database
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqTradingFailuresIncreasing
+          expr:
+            sum by(namespace)(increase(asteriq_failed_orders_total{namespace=~"asteriq-(dev|staging|production)"}[5m]))
+            > 5 and sum by(namespace)(increase(asteriq_failed_orders_total{namespace=~"asteriq-(dev|staging|production)"}[5m]))
+            > sum by(namespace)(increase(asteriq_failed_orders_total{namespace=~"asteriq-(dev|staging|production)"}[5m]
+            offset 5m))
+          for: 3m
+          labels:
+            severity: warning
+            service: api
+            alert_family: trade-errors
+            owner: asteriq
+          annotations:
+            summary: Failed trading requests are increasing
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqTradingFailureRatio
+          expr:
+            sum by(namespace)(rate(asteriq_failed_orders_total{namespace=~"asteriq-(dev|staging|production)"}[5m]))
+            / clamp_min(sum by(namespace)(rate(asteriq_trading_requests_total{namespace=~"asteriq-(dev|staging|production)"}[5m])),0.001)
+            > 0.1 and sum by(namespace)(rate(asteriq_trading_requests_total{namespace=~"asteriq-(dev|staging|production)"}[5m]))
+            > 0.0667
+          for: 5m
+          labels:
+            severity: critical
+            service: api
+            alert_family: trade-errors
+            owner: asteriq
+          annotations:
+            summary: Trading failure ratio exceeds 10% with sufficient traffic
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqIngressErrorsIncreasing
+          expr: sum by(namespace)(rate(nginx_ingress_controller_requests{status=~"5.."}[5m]))
+            > 0.01 and sum by(namespace)(rate(nginx_ingress_controller_requests{status=~"5.."}[5m]))
+            > 2 * sum by(namespace)(rate(nginx_ingress_controller_requests{status=~"5.."}[5m]
+            offset 5m))
+          for: 2m
+          labels:
+            severity: warning
+            service: ingress
+            alert_family: ingress-errors
+            owner: asteriq
+          annotations:
+            summary: Ingress 5xx request rate increased more than twofold
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqNodeUnavailable
+          expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+            service: kubernetes
+            alert_family: node-availability
+            owner: asteriq
+          annotations:
+            summary: Kubernetes node is not Ready
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqPodPending
+          expr: kube_pod_status_phase{namespace=~"asteriq-(dev|staging|production)",phase="Pending"}
+            == 1
+          for: 15m
+          labels:
+            severity: info
+            service: kubernetes
+            alert_family: pod-pending
+            owner: asteriq
+          annotations:
+            summary: Pod has remained Pending for 15 minutes
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqMetricsTargetDown
+          expr: up{namespace=~"asteriq-(dev|staging|production)"} == 0
+          for: 5m
+          labels:
+            severity: warning
+            service: monitoring
+            alert_family: scrape-availability
+            owner: asteriq
+          annotations:
+            summary: Application metrics target is down
+            description: Check the Asteriq service dashboard and alerting runbook; inspect
+              dependency health and recent releases.
+        - alert: AsteriqALBErrorsIncreasing
+          expr: ((sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum)))
+            + (sum by(load_balancer)(aws_applicationelb_httpcode_target_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))))
+            / clamp_min(sum by(load_balancer)(aws_applicationelb_request_count_sum) +
+            (sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum) or
+            on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))),1)
+            > 0.01 and ((sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum)))
+            + (sum by(load_balancer)(aws_applicationelb_httpcode_target_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))))
+            >= 5 and ((sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum)))
+            + (sum by(load_balancer)(aws_applicationelb_httpcode_target_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))))
+            / clamp_min(sum by(load_balancer)(aws_applicationelb_request_count_sum) +
+            (sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum) or
+            on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))),1)
+            > 2 * (((sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum
+            offset 5m) or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum
+            offset 5m))) + (sum by(load_balancer)(aws_applicationelb_httpcode_target_5_xx_count_sum
+            offset 5m) or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum
+            offset 5m)))) / clamp_min(sum by(load_balancer)(aws_applicationelb_request_count_sum
+            offset 5m) + (sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum
+            offset 5m) or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum
+            offset 5m))),1))
+          for: 2m
+          labels:
+            severity: warning
+            service: ingress
+            alert_family: ingress-errors
+            owner: asteriq
+          annotations:
+            summary: ALB/target 5xx ratio increased more than twofold
+            description: CloudWatch five-minute Sum gauges, with bounded ALB dimension
+              selection; verify exporter freshness.
+        - alert: AsteriqALBErrorsCritical
+          expr: ((sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum)))
+            + (sum by(load_balancer)(aws_applicationelb_httpcode_target_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))))
+            / clamp_min(sum by(load_balancer)(aws_applicationelb_request_count_sum) +
+            (sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum) or
+            on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))),1)
+            > 0.05 and ((sum by(load_balancer)(aws_applicationelb_httpcode_elb_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum)))
+            + (sum by(load_balancer)(aws_applicationelb_httpcode_target_5_xx_count_sum)
+            or on(load_balancer) (0 * sum by(load_balancer)(aws_applicationelb_request_count_sum))))
+            >= 5
+          for: 5m
+          labels:
+            severity: critical
+            service: ingress
+            alert_family: ingress-errors
+            owner: asteriq
+          annotations:
+            summary: ALB/target 5xx ratio exceeds 5%
+            description: CloudWatch five-minute Sum gauges, with bounded ALB dimension
+              selection; verify exporter freshness.
+        - alert: AsteriqLLMFailures
+          expr:
+            sum by(namespace)(rate(llm_failures_total{namespace=~"asteriq-(dev|staging|production)"}[5m]))
+            / clamp_min(sum by(namespace)(rate(llm_calls_total{namespace=~"asteriq-(dev|staging|production)"}[5m])),0.001)
+            > 0.1
+          for: 10m
+          labels:
+            severity: warning
+            service: ai-service
+            alert_family: llm-errors
+            owner: asteriq
+          annotations:
+            summary: LLM failure ratio exceeds 10%
+        - alert: AsteriqDeploymentUnderReplicated
+          expr:
+            kube_deployment_status_replicas_available{namespace=~"asteriq-(dev|staging|production)"}
+            < kube_deployment_spec_replicas{namespace=~"asteriq-(dev|staging|production)"}
+          for: 10m
+          labels:
+            severity: warning
+            service: kubernetes
+            alert_family: deployment-availability
+            owner: asteriq
+          annotations:
+            summary: Deployment has fewer ready replicas than desired
+        - alert: AsteriqDiskCritical
+          expr:
+            1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}
+            > 0.9
+          for: 10m
+          labels:
+            severity: critical
+            service: kubernetes
+            alert_family: node-disk
+            owner: asteriq
+          annotations:
+            summary: Node filesystem usage exceeds 90%
+        - alert: AsteriqLLMFailuresCritical
+          expr:
+            sum by(namespace)(rate(llm_failures_total{namespace=~"asteriq-(dev|staging|production)"}[5m]))
+            / clamp_min(sum by(namespace)(rate(llm_calls_total{namespace=~"asteriq-(dev|staging|production)"}[5m])),0.001)
+            > 0.25 and sum by(namespace)(rate(llm_calls_total{namespace=~"asteriq-(dev|staging|production)"}[5m]))
+            > 0.0167
+          for: 10m
+          labels:
+            severity: critical
+            service: ai-service
+            alert_family: llm-errors
+            owner: asteriq
+          annotations:
+            summary: LLM failure ratio exceeds 25%
+        - alert: AsteriqLLMLatency
+          expr:
+            histogram_quantile(0.95,sum by(le,namespace,operation)(rate(asteriq_llm_api_duration_seconds_bucket[5m])))
+            > 30
+          for: 10m
+          labels:
+            severity: warning
+            service: ai-service
+            alert_family: llm-latency
+            owner: asteriq
+          annotations:
+            summary: LLM p95 wrapper duration exceeds 30 seconds
+        - alert: AsteriqInferenceLatency
+          expr:
+            histogram_quantile(0.95,sum by(le,namespace,operation)(rate(asteriq_model_inference_duration_seconds_bucket[5m])))
+            > 5
+          for: 10m
+          labels:
+            severity: critical
+            service: ai-service
+            alert_family: model-latency
+            owner: asteriq
+          annotations:
+            summary: Local inference p95 exceeds 5 seconds
+        - alert: AsteriqDatabaseQueryLatency
+          expr:
+            histogram_quantile(0.95,sum by(le,namespace)(rate(asteriq_database_query_duration_seconds_bucket[5m])))
+            > 0.5
+          for: 10m
+          labels:
+            severity: warning
+            service: postgres
+            alert_family: postgres-latency
+            owner: asteriq
+          annotations:
+            summary: API-observed database p95 exceeds 500ms
+        - alert: AsteriqContainerStartupError
+          expr:
+            kube_pod_container_status_waiting_reason{namespace=~"asteriq-(dev|staging|production)",reason=~"ImagePullBackOff|ErrImagePull|CreateContainerConfigError"}
+            > 0
+          for: 10m
+          labels:
+            severity: warning
+            service: kubernetes
+            alert_family: pod-startup
+            owner: asteriq
+          annotations:
+            summary: Container cannot start

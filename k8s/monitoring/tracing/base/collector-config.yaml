@@ -1,0 +1,58 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 384
+    spike_limit_mib: 128
+  batch:
+    send_batch_size: 512
+    timeout: 2s
+  transform/privacy:
+    error_mode: propagate
+    trace_statements:
+      - context: span
+        statements:
+          - keep_keys(attributes, ["http.request.method", "http.response.status_code",
+            "http.method", "http.status_code", "http.route", "db.system", "db.system.name",
+            "db.operation", "db.operation.name", "server.address", "peer.service"])
+          - set(status.message, "")
+      - context: spanevent
+        statements:
+          - keep_keys(attributes, [])
+      - context: resource
+        statements:
+          - keep_keys(attributes, ["service.name", "deployment.environment.name", "asteriq.client.untrusted"])
+exporters:
+  otlp/tempo:
+    endpoint: asteriq-tempo-distributor.monitoring.svc.cluster.local:4317
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      queue_size: 512
+      num_consumers: 2
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+service:
+  extensions:
+    - health_check
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        - transform/privacy
+        - batch
+      exporters:
+        - otlp/tempo

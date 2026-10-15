@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: asteriq-root-dev
+  namespace: argocd
+spec:
+  project: asteriq-root-dev
+  source:
+    repoURL: https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+    targetRevision: main
+    path: app-of-apps/environments/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=false
+    - FailOnSharedResource=true
+    automated:
+      enabled: true
+      prune: false
+      selfHeal: true
+      allowEmpty: false

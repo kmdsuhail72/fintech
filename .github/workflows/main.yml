@@ -1,0 +1,91 @@
+name: Main
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: main-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality.yml
+  images:
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [web, api, ai-service]
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      ECR_PREFIX: ${{ vars.ECR_PREFIX || 'asteriq' }}
+      SERVICE: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/build-scan
+        with:
+          service: ${{ matrix.service }}
+          build-args: |
+            VITE_API_URL=/api/v1
+            INSTALL_NEWS_NLP=${{ vars.INSTALL_NEWS_NLP || 'false' }}
+      - name: Validate publication configuration
+        run: python scripts/ci/release.py check-config
+      - name: AWS authentication via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_PUBLISH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+          role-session-name: asteriq-publish-${{ github.run_id }}
+          unset-current-credentials: true
+      - name: Push scanned image and record immutable digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          TAG="$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+          docker tag "asteriq-ci/$SERVICE:$GITHUB_SHA" "$REGISTRY/$ECR_PREFIX/$SERVICE:$TAG"
+          docker push "$REGISTRY/$ECR_PREFIX/$SERVICE:$TAG"
+          DIGEST=$(aws ecr describe-images --repository-name "$ECR_PREFIX/$SERVICE" --image-ids "imageTag=$TAG" --query 'imageDetails[0].imageDigest' --output text)
+          export IMAGE="$REGISTRY/$ECR_PREFIX/$SERVICE@$DIGEST"
+          python scripts/ci/release.py write-image
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-image-${{ matrix.service }}
+          path: release-image-${{ matrix.service }}.json
+          if-no-files-found: error
+          retention-days: 30
+  release:
+    needs: [quality, images]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: release-image-*
+          path: release-images
+          merge-multiple: true
+      - name: Assemble deployment manifest
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          ECR_PREFIX: ${{ vars.ECR_PREFIX || 'asteriq' }}
+        run: python scripts/ci/release.py assemble
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-manifest
+          path: release.json
+          if-no-files-found: error
+          retention-days: 30

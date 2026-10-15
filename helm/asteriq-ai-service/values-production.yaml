@@ -1,0 +1,28 @@
+fullnameOverride: ai-service
+replicaCount: 2
+env:
+  ASTERIQ_ENVIRONMENT: production
+  APP_ENV: production
+  RESEARCH_BACKEND_URL: http://api:3000/api/v1
+resources:
+  requests:
+    cpu: '1'
+    memory: 2Gi
+  limits:
+    cpu: '2'
+    memory: 4Gi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 65
+  targetMemoryUtilizationPercentage: 80
+scheduling:
+  zoneSpread: true
+image:
+  repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-production/ai-service
+  tag: REPLACE_RELEASE_TAG
+  digest: ''
+rdsCa:
+  enabled: true
+  existingConfigMap: rds-ca

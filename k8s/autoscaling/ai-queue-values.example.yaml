@@ -1,0 +1,22 @@
+# Optional future design: requires a shared queue and its real depth exporter.
+# Helm replaces lists, so retain the in-flight metric when adding the queue.
+asteriq-ai-service:
+  autoscaling:
+    additionalMetrics:
+      - type: Pods
+        pods:
+          metric:
+            name: asteriq_ai_active_requests
+          target:
+            type: AverageValue
+            averageValue: '8'
+      - type: External
+        external:
+          metric:
+            name: asteriq_ai_queue_depth
+            selector:
+              matchLabels:
+                queue: ai-requests
+          target:
+            type: AverageValue
+            averageValue: '5'

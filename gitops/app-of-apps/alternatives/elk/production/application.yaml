@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: logging-production
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '-10'
+spec:
+  project: asteriq-elk-production
+  destination:
+    server: https://REPLACE_PRODUCTION_EKS_API_SERVER
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+      - FailOnSharedResource=true
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+  source:
+    repoURL: https://github.com/REPLACE_OWNER/REPLACE_APPLICATION_REPOSITORY.git
+    targetRevision: REPLACE_APPROVED_APPLICATION_COMMIT
+    path: k8s/monitoring/elk/environments/production

@@ -1,0 +1,8 @@
+account_id = "000000000000"
+region = "ap-south-1"
+environment = "production"
+zone_id = "REPLACE_ROUTE53_ZONE_ID"
+domain_name = "asteriq.example.com"
+origin_alb_name = "asteriq-production-eks-web"
+certificate_validation_record_fqdn = "REPLACE_FOUNDATION_CERTIFICATE_VALIDATION_RECORD_FQDN"
+# Set TF_VAR_origin_verification_header through the managed secret mechanism.

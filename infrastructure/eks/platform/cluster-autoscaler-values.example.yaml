@@ -1,0 +1,18 @@
+autoDiscovery:
+  clusterName: REPLACE_CLUSTER_NAME
+awsRegion: REPLACE_REGION
+cloudProvider: aws
+rbac:
+  serviceAccount:
+    create: true
+    name: cluster-autoscaler
+    annotations:
+      eks.amazonaws.com/role-arn: REPLACE_AUTOSCALER_IRSA_ROLE_ARN
+extraArgs:
+  balance-similar-node-groups: 'true'
+  expander: least-waste
+  skip-nodes-with-local-storage: 'false'
+  scale-down-unneeded-time: 10m
+# Pin the controller minor version to the Kubernetes minor version.
+image:
+  tag: REPLACE_COMPATIBLE_CLUSTER_AUTOSCALER_VERSION

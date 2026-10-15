@@ -1,0 +1,30 @@
+# Merge AFTER production values; appends these signals to CPU and memory.
+# Targets are initial hypotheses to validate with load tests.
+asteriq-api:
+  autoscaling:
+    additionalMetrics:
+      - type: Pods
+        pods:
+          metric:
+            name: asteriq_http_requests_per_second
+          target:
+            type: AverageValue
+            averageValue: '50'
+      - type: Pods
+        pods:
+          metric:
+            name: asteriq_websocket_connections
+          target:
+            type: AverageValue
+            averageValue: '500'
+asteriq-ai-service:
+  autoscaling:
+    additionalMetrics:
+      - type: Pods
+        pods:
+          metric:
+            name: asteriq_ai_active_requests
+          target:
+            type: AverageValue
+            averageValue: '8'
+

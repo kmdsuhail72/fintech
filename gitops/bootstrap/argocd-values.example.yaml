@@ -1,0 +1,28 @@
+configs:
+  cm:
+    application.resourceTrackingMethod: annotation
+    admin.enabled: 'false'
+    timeout.reconciliation: 180s
+    oidc.config: 'name: Organization SSO
+
+      issuer: https://REPLACE_SSO_ISSUER
+
+      clientID: REPLACE_SSO_CLIENT_ID
+
+      clientSecret: $oidc.asteriq-client-secret
+
+      requestedScopes: [openid, profile, email, groups]
+
+      '
+  rbac:
+    policy.default: role:asteriq-no-access
+    scopes: '[groups]'
+server:
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false
+controller:
+  replicas: 2
+repoServer:
+  replicas: 2

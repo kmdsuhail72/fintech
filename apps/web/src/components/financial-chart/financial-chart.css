@@ -1,0 +1,109 @@
+.financial-chart {
+  min-width: 0;
+  background: #fff;
+  border-radius: 10px;
+}
+.financial-chart-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px 8px;
+  color: #313a4e;
+}
+.financial-chart-header > span {
+  font-size: 21px;
+  font-variant-numeric: tabular-nums;
+}
+.financial-chart-toggle {
+  margin-left: auto;
+}
+.financial-chart-toolbar {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #edf0f5;
+}
+.financial-chart-toolbar > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.financial-chart button {
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 5px;
+  color: #7c8799;
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
+.financial-chart button[aria-pressed='true'] {
+  color: #6656c6;
+  background: #f0edfc;
+  font-weight: 650;
+}
+.financial-chart button:focus-visible {
+  outline: 2px solid #7365d8;
+  outline-offset: 2px;
+}
+.financial-chart-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  color: #8791a1;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.financial-chart-stage {
+  position: relative;
+  min-width: 0;
+}
+.financial-chart-canvas {
+  position: absolute;
+  inset: 0;
+}
+.financial-chart-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #ffffffeb;
+  color: #7c8799;
+  font-size: 12px;
+  z-index: 2;
+  text-align: center;
+  padding: 20px;
+}
+.financial-chart-state[role='alert'] {
+  color: #b45f68;
+}
+.financial-chart-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  color: #8791a1;
+  font-size: 10px;
+  border-top: 1px solid #edf0f5;
+}
+.financial-chart-footer a {
+  color: #7465cc;
+}
+@media (max-width: 620px) {
+  .financial-chart-header {
+    flex-wrap: wrap;
+  }
+  .financial-chart-toolbar {
+    gap: 5px;
+  }
+  .financial-chart-toolbar button {
+    padding: 6px 8px;
+  }
+}

@@ -1,0 +1,38 @@
+fullnameOverride: asteriq-tempo
+serviceAccount:
+  create: true
+  name: asteriq-tempo
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_TEMPO_S3_IRSA_ROLE_ARN
+traces:
+  otlp:
+    grpc:
+      enabled: true
+    http:
+      enabled: false
+storage:
+  trace:
+    backend: s3
+    s3:
+      bucket: REPLACE_TEMPO_BUCKET
+      region: REPLACE_AWS_REGION
+ingester:
+  replicas: 3
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: REPLACE_MONITORING_STORAGE_CLASS
+distributor:
+  replicas: 2
+querier:
+  replicas: 2
+queryFrontend:
+  replicas: 2
+compactor:
+  config:
+    compaction:
+      block_retention: 72h
+gateway:
+  enabled: true
+ingress:
+  enabled: false

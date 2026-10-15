@@ -1,0 +1,164 @@
+name: GitOps Promotion
+on:
+  workflow_run:
+    workflows: [Main]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Main workflow run containing the release manifest
+        required: true
+        type: string
+      environment:
+        description: Promote the same approved release through the environments
+        required: true
+        type: choice
+        options: [development, staging, production]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: gitops-${{ github.event_name == 'workflow_run' && 'development' || inputs.environment }}
+  cancel-in-progress: false
+jobs:
+  propose:
+    if: >-
+      vars.GITOPS_REPOSITORY != '' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    environment:
+      name: gitops-${{ github.event_name == 'workflow_run' && 'development' || inputs.environment }}
+    env:
+      TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_run' && 'development' || inputs.environment }}
+      RELEASE_RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+      APP_REPOSITORY: ${{ github.repository }}
+      GITOPS_REPOSITORY: ${{ vars.GITOPS_REPOSITORY }}
+      GITOPS_BRANCH: ${{ vars.GITOPS_BRANCH || 'main' }}
+      AWS_ACCOUNT_ID: ${{ vars.IMAGE_BUILD_ACCOUNT_ID || vars.AWS_ACCOUNT_ID }}
+      AWS_REGION: ${{ vars.IMAGE_BUILD_REGION || vars.AWS_REGION }}
+      ECR_PREFIX: ${{ vars.ECR_PREFIX || 'asteriq' }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Verify completed Main provenance before acquiring write credentials
+        id: trusted
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/ci/release.py verify-run
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: release-manifest
+          path: release
+          run-id: ${{ env.RELEASE_RUN_ID }}
+          github-token: ${{ github.token }}
+      - name: Validate complete immutable image manifest
+        env:
+          EXPECTED_COMMIT: ${{ steps.trusted.outputs.commit }}
+          EXPECTED_RUN_ATTEMPT: ${{ steps.trusted.outputs.attempt }}
+        run: python scripts/ci/release.py validate
+      - name: Resolve immutable scan inputs
+        id: images
+        run: python scripts/ci/release.py image-outputs
+      - name: Production ECR read authentication through OIDC
+        if: env.TARGET_ENVIRONMENT == 'production'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_READ_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
+          unset-current-credentials: true
+      - name: Production registry login for current vulnerability assessment
+        if: env.TARGET_ENVIRONMENT == 'production'
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+      - name: Rescan production frontend digest
+        if: env.TARGET_ENVIRONMENT == 'production'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          image-ref: ${{ steps.images.outputs.web }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          timeout: 10m
+      - name: Rescan production API digest
+        if: env.TARGET_ENVIRONMENT == 'production'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          skip-setup-trivy: 'true'
+          image-ref: ${{ steps.images.outputs.api }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          timeout: 10m
+      - name: Rescan production AI digest
+        if: env.TARGET_ENVIRONMENT == 'production'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          skip-setup-trivy: 'true'
+          image-ref: ${{ steps.images.outputs.ai-service }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          timeout: 10m
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ steps.trusted.outputs.commit }}
+          path: release-source
+          persist-credentials: false
+      - name: Require GitOps migration support in the promoted source revision
+        run: test -f release-source/helm/asteriq-platform/templates/migration.yaml
+      - name: Validate GitOps repository identity
+        id: destination
+        run: |
+          python - <<'PY'
+          import os, re
+          repository = os.environ['GITOPS_REPOSITORY']
+          if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
+              raise SystemExit('GITOPS_REPOSITORY must be owner/repository')
+          owner, name = repository.split('/')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+              stream.write(f'owner={owner}\nname={name}\n')
+          PY
+      - name: Short-lived token scoped to the GitOps repository
+        id: gitops-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GITOPS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY }}
+          owner: ${{ steps.destination.outputs.owner }}
+          repositories: ${{ steps.destination.outputs.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: ${{ vars.GITOPS_REPOSITORY }}
+          ref: ${{ env.GITOPS_BRANCH }}
+          path: desired-state
+          token: ${{ steps.gitops-token.outputs.token }}
+          persist-credentials: true
+      - name: Install safe YAML parser
+        run: python -m pip install -r scripts/kubernetes/requirements.txt
+      - name: Prepare pinned desired state and open a promotion PR
+        env:
+          EXPECTED_COMMIT: ${{ steps.trusted.outputs.commit }}
+          EXPECTED_RUN_ATTEMPT: ${{ steps.trusted.outputs.attempt }}
+          GH_TOKEN: ${{ steps.gitops-token.outputs.token }}
+        run: >-
+          python scripts/gitops/promote.py --checkout desired-state
+          --environment "$TARGET_ENVIRONMENT" --release release/release.json
+          --chart release-source/helm/asteriq-platform --publish-pr

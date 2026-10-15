@@ -1,0 +1,28 @@
+controller:
+  type: daemonset
+  tolerations:
+    - operator: Exists
+rbac:
+  create: false
+serviceAccount:
+  create: true
+  name: asteriq-alloy
+alloy:
+  configMap:
+    create: false
+    name: asteriq-alloy
+    key: config.alloy
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: ASTERIQ_ENVIRONMENT
+      value: REPLACE_CLUSTER_ENVIRONMENT
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

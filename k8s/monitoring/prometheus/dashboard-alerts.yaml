@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: asteriq-dashboard-alerts
+  namespace: monitoring
+  labels:
+    asteriq.ai/monitoring: enabled
+spec:
+  groups:
+    - name: asteriq.alerting.recordings
+      rules:
+        - record: asteriq:api_5xx_ratio:5m
+          expr:
+            sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"5.."}[5m]))
+            / clamp_min(sum by(namespace)(rate(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health"}[5m])),0.001)

@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: asteriq-split-production
+  namespace: argocd
+spec:
+  description: Asteriq production application tier only
+  sourceRepos:
+  - https://github.com/REPLACE_OWNER/REPLACE_APPLICATION_REPOSITORY.git
+  - https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+  destinations:
+  - server: https://REPLACE_PRODUCTION_EKS_API_SERVER
+    namespace: asteriq-production
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+  - group: apps
+    kind: Deployment
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: ServiceAccount
+  - group: autoscaling
+    kind: HorizontalPodAutoscaler
+  - group: policy
+    kind: PodDisruptionBudget
+  - group: networking.k8s.io
+    kind: Ingress
+  - group: batch
+    kind: Job
+  orphanedResources:
+    warn: true
+  syncWindows:
+  - kind: allow
+    schedule: 0 14 * * 1-5
+    duration: 2h
+    timeZone: Asia/Kolkata
+    applications:
+    - asteriq-*-production
+    manualSync: false

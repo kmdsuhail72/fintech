@@ -1,0 +1,83 @@
+{{- if .Values.migration.enabled }}
+{{- $api := index .Values "asteriq-api" }}
+{{- if not $api.enabled }}
+{{- fail "migration requires asteriq-api.enabled=true" }}
+{{- end }}
+{{- $repository := $api.image.repository }}
+{{- $digest := $api.image.digest }}
+{{- if .Values.migration.image.digest }}
+{{- $repository = required "migration.image.repository is required with its digest" .Values.migration.image.repository }}
+{{- $digest = .Values.migration.image.digest }}
+{{- end }}
+{{- if not $digest }}
+{{- fail "GitOps migration requires an immutable asteriq-api.image.digest" }}
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: asteriq-migration
+  labels:
+    app.kubernetes.io/name: migration
+    app.kubernetes.io/part-of: asteriq
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: '-1'
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.migration.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: migration
+        app.kubernetes.io/part-of: asteriq
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Values.migration.serviceAccountName | quote }}
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migration
+          image: {{ printf "%s@%s" $repository $digest | quote }}
+          command: ['node', '/workspace/scripts/migrate.mjs']
+          env:
+            - name: RUN_MIGRATIONS
+              value: 'false'
+            {{- if .Values.migration.rdsCa.enabled }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/rds-ca/global-bundle.pem
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.migration.existingSecret | quote }}
+          resources:
+            {{- toYaml .Values.migration.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          {{- if .Values.migration.rdsCa.enabled }}
+          volumeMounts:
+            - name: rds-ca
+              mountPath: /etc/rds-ca
+              readOnly: true
+          {{- end }}
+      {{- if .Values.migration.rdsCa.enabled }}
+      volumes:
+        - name: rds-ca
+          configMap:
+            name: {{ .Values.migration.rdsCa.existingConfigMap | quote }}
+      {{- end }}
+{{- end }}

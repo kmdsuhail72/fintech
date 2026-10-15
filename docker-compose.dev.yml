@@ -1,0 +1,74 @@
+# Apply with docker-compose.yml; source mounts avoid host node_modules and generated files.
+services:
+  postgres:
+    ports: ['127.0.0.1:${POSTGRES_PORT:-5432}:5432']
+  redis:
+    ports: ['127.0.0.1:${REDIS_PORT:-6379}:6379']
+  api:
+    build:
+      target: development
+    environment:
+      NODE_ENV: development
+      AUTH_WEB_URL: http://localhost:5173
+      CHOKIDAR_USEPOLLING: ${DEV_POLLING:-true}
+    ports: ['127.0.0.1:${API_PORT:-3000}:3000']
+    command:
+      [
+        'npx',
+        'concurrently',
+        '-k',
+        'npm run build --workspace @asteriq/types -- --watch',
+        'npm run dev --workspace @asteriq/api',
+      ]
+    volumes:
+      - ./apps/api/src:/workspace/apps/api/src:ro
+      - ./packages/types/src:/workspace/packages/types/src:ro
+      - ./packages/config:/workspace/packages/config:ro
+      - ./database/migrations:/workspace/database/migrations:ro
+      - ./scripts/migrate.mjs:/workspace/scripts/migrate.mjs:ro
+  ai-service:
+    build:
+      target: development
+    ports: ['127.0.0.1:${AI_SERVICE_PORT:-8000}:8000']
+    environment:
+      APP_ENV: development
+      WATCHFILES_FORCE_POLLING: ${DEV_POLLING:-true}
+    volumes:
+      - ./apps/ai-service/app:/app/app:ro
+      - ./apps/ai-service/scripts:/app/scripts:ro
+  web:
+    build:
+      target: development
+    # Base exposes 8080; this override runs Vite on the same container port for consistent routing.
+    command:
+      [
+        'npx',
+        'concurrently',
+        '-k',
+        'npm run build --workspace @asteriq/types -- --watch',
+        'npm run build --workspace @asteriq/ui -- --watch',
+        'npm run build --workspace @asteriq/utils -- --watch',
+        'npm run dev --workspace @asteriq/web -- --port 8080',
+      ]
+    ports: ['127.0.0.1:5173:8080']
+    environment:
+      VITE_API_URL: /api/v1
+      API_PROXY_TARGET: http://api:3000
+      CHOKIDAR_USEPOLLING: ${DEV_POLLING:-true}
+    volumes:
+      - ./apps/web/src:/workspace/apps/web/src:ro
+      - ./apps/web/index.html:/workspace/apps/web/index.html:ro
+      - ./apps/web/vite.config.ts:/workspace/apps/web/vite.config.ts:ro
+      - ./packages/types/src:/workspace/packages/types/src:ro
+      - ./packages/ui/src:/workspace/packages/ui/src:ro
+      - ./packages/utils/src:/workspace/packages/utils/src:ro
+      - ./packages/config:/workspace/packages/config:ro
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8080/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      start_period: 60s

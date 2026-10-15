@@ -1,0 +1,22 @@
+# Merge with the canonical default-deny policies, replacing these demo CIDRs
+# with foundation application subnet CIDRs. PrivateLink does not use public IPs.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: application-to-aws-endpoints
+  namespace: asteriq-production
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [api, ai-service]
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock: {cidr: 10.80.64.0/20}
+        - ipBlock: {cidr: 10.80.80.0/20}
+        - ipBlock: {cidr: 10.80.96.0/20}
+      ports:
+        - protocol: TCP
+          port: 443

@@ -1,0 +1,11 @@
+crds:
+  enabled: true
+  keep: true
+replicaCount: 2
+webhook:
+  replicaCount: 2
+cainjector:
+  replicaCount: 2
+prometheus:
+  servicemonitor:
+    enabled: false

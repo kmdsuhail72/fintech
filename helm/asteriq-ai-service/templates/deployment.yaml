@@ -1,0 +1,159 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "asteriq-ai-service.fullname" . }}
+  labels:
+    {{- include "asteriq-ai-service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  minReadySeconds: {{ .Values.minReadySeconds }}
+  progressDeadlineSeconds: {{ .Values.progressDeadlineSeconds }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "asteriq-ai-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "asteriq-ai-service.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- $checksum := include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- merge (dict "checksum/config" $checksum) .Values.podAnnotations | toYaml | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "asteriq-ai-service.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.scheduling.podAntiAffinity }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    {{- include "asteriq-ai-service.selectorLabels" . | nindent 20 }}
+                topologyKey: kubernetes.io/hostname
+      {{- end }}
+      {{- if .Values.scheduling.zoneSpread }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "asteriq-ai-service.selectorLabels" . | nindent 14 }}
+      {{- end }}
+      containers:
+        - name: ai-service
+          image: {{ include "asteriq-ai-service.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.containerPort }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "asteriq-ai-service.fullname" . }}-config
+            {{- range .Values.existingSecrets }}
+            - secretRef:
+                name: {{ . | quote }}
+            {{- end }}
+          {{- with .Values.extraEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if eq "ai-service" "ai-service" }}
+          command: ["uvicorn"]
+          args: ["app.main:app", "--host", "0.0.0.0", "--port", {{ .Values.service.containerPort | quote }}, "--timeout-graceful-shutdown", {{ .Values.ai.gracefulShutdownSeconds | quote }}]
+          {{- end }}
+          {{- if eq "ai-service" "frontend" }}
+          command: ["sh", "-ec"]
+          args:
+            - |
+              resolver="$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)"
+              printf '%s' "$resolver" | grep -Eq '^[0-9.]+$'
+              printf '%s' "$API_UPSTREAM" | grep -Eq '^http://[A-Za-z0-9][A-Za-z0-9._-]*(:[0-9]{1,5})?$'
+              mkdir -p /tmp/client /tmp/proxy /tmp/fastcgi /tmp/uwsgi /tmp/scgi
+              sed -e "s|__ASTERIQ_DNS_RESOLVER__|$resolver|g" -e "s|__ASTERIQ_API_UPSTREAM__|$API_UPSTREAM|g" /opt/asteriq/nginx.conf.template > /tmp/nginx.conf
+              exec nginx -c /tmp/nginx.conf -g 'daemon off;'
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            {{- omit .Values.probes.startup "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            {{- omit .Values.probes.readiness "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            {{- omit .Values.probes.liveness "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", {{ printf "sleep %v" .Values.preStopDelaySeconds | quote }}]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if eq "ai-service" "frontend" }}
+            - name: nginx
+              mountPath: /opt/asteriq
+              readOnly: true
+            {{- end }}
+            {{- if eq "ai-service" "ai-service" }}
+            - name: artifacts
+              mountPath: /app/artifacts
+            {{- end }}
+            {{- if .Values.rdsCa.enabled }}
+            - name: rds-ca
+              mountPath: /etc/rds-ca
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.tmpSizeLimit }}
+        {{- if eq "ai-service" "frontend" }}
+        - name: nginx
+          configMap:
+            name: {{ include "asteriq-ai-service.fullname" . }}-nginx
+        {{- end }}
+        {{- if eq "ai-service" "ai-service" }}
+        - name: artifacts
+          emptyDir:
+            sizeLimit: {{ .Values.ai.artifactsSizeLimit }}
+        {{- end }}
+        {{- if .Values.rdsCa.enabled }}
+        - name: rds-ca
+          configMap:
+            name: {{ .Values.rdsCa.existingConfigMap | quote }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}

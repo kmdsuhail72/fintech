@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-tempo-datasource
+  namespace: monitoring
+  labels:
+    grafana_datasource: '1'
+data:
+  tempo.yaml: "apiVersion: 1\ndatasources:\n- name: Tempo\n  uid: tempo\n  type: tempo\n\
+    \  access: proxy\n  url: http://asteriq-tempo-query-frontend.monitoring.svc:3200\n"

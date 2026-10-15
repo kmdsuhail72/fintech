@@ -1,0 +1,72 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: asteriq-pod-hardening
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  evaluation:
+    admission: {enabled: true}
+    background: {enabled: true}
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods, pods/ephemeralcontainers]
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments, statefulsets, daemonsets, replicasets]
+      - apiGroups: [batch]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [jobs, cronjobs]
+  matchConditions:
+    - name: asteriq-application-namespace
+      expression: "has(object.metadata.namespace) && object.metadata.namespace in ['asteriq-dev', 'asteriq-staging', 'asteriq-production']"
+  variables:
+    - name: pod
+      expression: "object.kind == 'Pod' ? object.spec : object.kind == 'CronJob' ? object.spec.jobTemplate.spec.template.spec : object.spec.template.spec"
+    - name: computeContainers
+      expression: "variables.pod.containers + (has(variables.pod.initContainers) ? variables.pod.initContainers : [])"
+    - name: containers
+      expression: "variables.computeContainers + (has(variables.pod.ephemeralContainers) ? variables.pod.ephemeralContainers : [])"
+  validations:
+    - message: Host networking, host PID and host IPC are forbidden.
+      expression: "(!has(variables.pod.hostNetwork) || !variables.pod.hostNetwork) && (!has(variables.pod.hostPID) || !variables.pod.hostPID) && (!has(variables.pod.hostIPC) || !variables.pod.hostIPC)"
+    - message: All hostPath volumes are forbidden in application namespaces.
+      expression: "!has(variables.pod.volumes) || variables.pod.volumes.all(v, !has(v.hostPath))"
+    - message: Containers, init containers and ephemeral containers must not be privileged or escalate privileges.
+      expression: "variables.containers.all(c, has(c.securityContext) && (!has(c.securityContext.privileged) || !c.securityContext.privileged) && has(c.securityContext.allowPrivilegeEscalation) && !c.securityContext.allowPrivilegeEscalation)"
+    - message: Every container requires a read-only root filesystem.
+      expression: "variables.containers.all(c, has(c.securityContext) && has(c.securityContext.readOnlyRootFilesystem) && c.securityContext.readOnlyRootFilesystem)"
+    - message: Require effective runAsNonRoot true and an explicit positive effective user ID; container overrides cannot select root.
+      expression: >-
+        variables.containers.all(c,
+          (has(c.securityContext) && has(c.securityContext.runAsNonRoot)
+            ? c.securityContext.runAsNonRoot
+            : has(variables.pod.securityContext) && has(variables.pod.securityContext.runAsNonRoot) && variables.pod.securityContext.runAsNonRoot)
+          && (has(c.securityContext) && has(c.securityContext.runAsUser)
+            ? c.securityContext.runAsUser > 0
+            : has(variables.pod.securityContext) && has(variables.pod.securityContext.runAsUser) && variables.pod.securityContext.runAsUser > 0))
+    - message: Drop ALL Linux capabilities and add none.
+      expression: "variables.containers.all(c, has(c.securityContext) && has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) && 'ALL' in c.securityContext.capabilities.drop && (!has(c.securityContext.capabilities.add) || size(c.securityContext.capabilities.add) == 0))"
+    - message: Require RuntimeDefault seccomp; reject unconfined container overrides.
+      expression: >-
+        variables.containers.all(c,
+          has(c.securityContext) && has(c.securityContext.seccompProfile)
+            ? c.securityContext.seccompProfile.type == 'RuntimeDefault'
+            : has(variables.pod.securityContext) && has(variables.pod.securityContext.seccompProfile) && variables.pod.securityContext.seccompProfile.type == 'RuntimeDefault')
+    - message: Use a dedicated application service account and disable Kubernetes API token automount.
+      expression: "has(variables.pod.serviceAccountName) && variables.pod.serviceAccountName in ['frontend', 'api', 'ai-service', 'migration'] && has(variables.pod.automountServiceAccountToken) && !variables.pod.automountServiceAccountToken"
+    - message: Regular and init containers require positive CPU/memory requests and limits; ephemeral containers cannot define resources.
+      expression: >-
+        variables.computeContainers.all(c,
+          has(c.resources) && has(c.resources.requests) && has(c.resources.limits)
+          && 'cpu' in c.resources.requests && 'memory' in c.resources.requests
+          && 'cpu' in c.resources.limits && 'memory' in c.resources.limits
+          && quantity(string(c.resources.requests['cpu'])).isGreaterThan(quantity('0'))
+          && quantity(string(c.resources.requests['memory'])).isGreaterThan(quantity('0'))
+          && quantity(string(c.resources.limits['cpu'])).isGreaterThan(quantity('0'))
+          && quantity(string(c.resources.limits['memory'])).isGreaterThan(quantity('0')))

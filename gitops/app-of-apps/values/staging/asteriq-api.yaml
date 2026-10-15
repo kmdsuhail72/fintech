@@ -1,0 +1,30 @@
+fullnameOverride: api
+replicaCount: 2
+env:
+  ASTERIQ_ENVIRONMENT: staging
+  NODE_ENV: production
+  TRUST_PROXY_HOPS: '2'
+  CORS_ORIGINS: https://REPLACE_STAGING_HOST
+  AUTH_WEB_URL: https://REPLACE_STAGING_HOST
+  AUTH_EMAIL_FROM: REPLACE_STAGING_SES_SENDER
+  AI_SERVICE_URL: http://ai-service:8000
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: '2'
+    memory: 1Gi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+scheduling:
+  zoneSpread: true
+image:
+  repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-staging/api
+  tag: REPLACE_RELEASE_TAG
+  digest: REPLACE_IMMUTABLE_SHA256_DIGEST
+rdsCa:
+  enabled: true
+  existingConfigMap: rds-ca

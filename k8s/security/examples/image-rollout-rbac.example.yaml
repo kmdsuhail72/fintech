@@ -1,0 +1,26 @@
+# Optional, trusted release automation ONLY. Workload patch rights can expose
+# application credentials; this is not a safe role for ordinary support users.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: asteriq-image-rollout
+  namespace: asteriq-production
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    resourceNames: [frontend, api, ai-service]
+    verbs: [get, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: asteriq-image-rollout
+  namespace: asteriq-production
+subjects:
+  - kind: Group
+    name: asteriq:production:trusted-release
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: asteriq-image-rollout
+  apiGroup: rbac.authorization.k8s.io

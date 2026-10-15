@@ -1,0 +1,26 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: asteriq-restricted-namespaces
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [namespaces]
+  matchConditions:
+    - name: application-namespace
+      expression: "object.metadata.name in ['asteriq-dev', 'asteriq-staging', 'asteriq-production']"
+  validations:
+    - message: Application namespaces must retain Restricted Pod Security enforcement, audit and warning labels.
+      expression: >-
+        has(object.metadata.labels)
+        && 'pod-security.kubernetes.io/enforce' in object.metadata.labels
+        && object.metadata.labels['pod-security.kubernetes.io/enforce'] == 'restricted'
+        && 'pod-security.kubernetes.io/audit' in object.metadata.labels
+        && object.metadata.labels['pod-security.kubernetes.io/audit'] == 'restricted'
+        && 'pod-security.kubernetes.io/warn' in object.metadata.labels
+        && object.metadata.labels['pod-security.kubernetes.io/warn'] == 'restricted'

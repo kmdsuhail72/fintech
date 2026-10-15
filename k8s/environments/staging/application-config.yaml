@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+data:
+  ASTERIQ_ENVIRONMENT: staging
+  NODE_ENV: production
+  TRUST_PROXY_HOPS: '2'
+  CORS_ORIGINS: https://REPLACE_STAGING_HOST
+  AUTH_WEB_URL: https://REPLACE_STAGING_HOST
+  AUTH_EMAIL_FROM: REPLACE_STAGING_SES_SENDER
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-service-config
+data:
+  ASTERIQ_ENVIRONMENT: staging
+  APP_ENV: staging

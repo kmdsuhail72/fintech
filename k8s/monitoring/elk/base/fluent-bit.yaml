@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: asteriq-fluent-bit
+  namespace: logging-agents
+  labels:
+    app.kubernetes.io/name: fluent-bit
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: asteriq-fluent-bit
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+      - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: asteriq-fluent-bit
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: asteriq-fluent-bit
+subjects:
+  - kind: ServiceAccount
+    name: asteriq-fluent-bit
+    namespace: logging-agents
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: asteriq-fluent-bit
+  namespace: logging-agents
+  labels: &id001
+    app.kubernetes.io/name: fluent-bit
+spec:
+  selector:
+    matchLabels: *id001
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      serviceAccountName: asteriq-fluent-bit
+      terminationGracePeriodSeconds: 60
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: fluent-bit
+          image: cr.fluentbit.io/fluent/fluent-bit:REPLACE_APPROVED_FLUENT_BIT_VERSION
+          args:
+            - -c
+            - /fluent-bit/config/fluent-bit.conf
+          ports:
+            - name: health
+              containerPort: 2020
+          env:
+            - name: ASTERIQ_ENVIRONMENT
+              value: REPLACE_CLUSTER_ENVIRONMENT
+            - name: ES_LOG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-log-writer
+                  key: username
+            - name: ES_LOG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-log-writer
+                  key: password
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          readinessProbe:
+            httpGet:
+              path: /api/v1/metrics
+              port: health
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/metrics
+              port: health
+            periodSeconds: 30
+            failureThreshold: 5
+          startupProbe:
+            httpGet:
+              path: /api/v1/metrics
+              port: health
+            periodSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log
+              readOnly: true
+            - name: buffers
+              mountPath: /buffers
+            - name: config
+              mountPath: /fluent-bit/config
+              readOnly: true
+            - name: es-ca
+              mountPath: /es-ca
+              readOnly: true
+      volumes:
+        - name: logs
+          hostPath:
+            path: /var/log
+            type: Directory
+        - name: buffers
+          hostPath:
+            path: /var/lib/asteriq-fluent-bit
+            type: DirectoryOrCreate
+        - name: config
+          configMap:
+            name: asteriq-fluent-bit
+        - name: es-ca
+          secret:
+            secretName: elasticsearch-log-ca

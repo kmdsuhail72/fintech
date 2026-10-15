@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  revisionHistoryLimit: 5
+  minReadySeconds: 10
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+      app.kubernetes.io/part-of: asteriq
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/part-of: asteriq
+    spec:
+      serviceAccountName: frontend
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 180
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: frontend
+                    app.kubernetes.io/part-of: asteriq
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: frontend
+          image: asteriq/frontend:REPLACE_IMAGE
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: frontend-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            timeoutSeconds: 3
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            timeoutSeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - sleep 35
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx
+              mountPath: /opt/asteriq
+              readOnly: true
+          command:
+            - sh
+            - -ec
+          args:
+            - 'resolver="$(awk ''/^nameserver/ {print $2; exit}'' /etc/resolv.conf)"
+
+              printf ''%s'' "$resolver" | grep -Eq ''^[0-9.]+$''
+
+              printf ''%s'' "$API_UPSTREAM" | grep -Eq ''^http://[A-Za-z0-9][A-Za-z0-9._-]*(:[0-9]{1,5})?$''
+
+              mkdir -p /tmp/client /tmp/proxy /tmp/fastcgi /tmp/uwsgi /tmp/scgi
+
+              sed -e "s|__ASTERIQ_DNS_RESOLVER__|$resolver|g" -e "s|__ASTERIQ_API_UPSTREAM__|$API_UPSTREAM|g"
+              /opt/asteriq/nginx.conf.template > /tmp/nginx.conf
+
+              exec nginx -c /tmp/nginx.conf -g ''daemon off;''
+
+              '
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi
+        - name: nginx
+          configMap:
+            name: frontend-nginx
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux

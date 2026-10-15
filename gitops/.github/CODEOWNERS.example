@@ -1,0 +1,9 @@
+# Replace with real GitHub teams, then rename to CODEOWNERS in the GitOps repository.
+* @REPLACE_ORG/platform-admins
+/environments/development/ @REPLACE_ORG/development-release-managers
+/environments/staging/ @REPLACE_ORG/staging-release-managers
+/environments/production/ @REPLACE_ORG/production-release-managers
+/applications/ @REPLACE_ORG/platform-admins
+/projects/ @REPLACE_ORG/platform-admins
+/bootstrap/ @REPLACE_ORG/platform-admins
+/.github/ @REPLACE_ORG/platform-admins

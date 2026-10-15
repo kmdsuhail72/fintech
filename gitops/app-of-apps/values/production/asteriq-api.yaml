@@ -1,0 +1,32 @@
+fullnameOverride: api
+replicaCount: 3
+env:
+  ASTERIQ_ENVIRONMENT: production
+  NODE_ENV: production
+  TRUST_PROXY_HOPS: '2'
+  CORS_ORIGINS: https://REPLACE_PRODUCTION_HOST
+  AUTH_WEB_URL: https://REPLACE_PRODUCTION_HOST
+  AUTH_EMAIL_FROM: REPLACE_PRODUCTION_SES_SENDER
+  AI_SERVICE_URL: http://ai-service:8000
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: '2'
+    memory: 1Gi
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 65
+  targetMemoryUtilizationPercentage: 80
+scheduling:
+  zoneSpread: true
+image:
+  repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-production/api
+  tag: REPLACE_RELEASE_TAG
+  digest: REPLACE_IMMUTABLE_SHA256_DIGEST
+rdsCa:
+  enabled: true
+  existingConfigMap: rds-ca

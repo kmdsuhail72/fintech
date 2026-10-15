@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: asteriq-ai-service-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '0'
+spec:
+  project: asteriq-split-dev
+  sources:
+  - repoURL: https://github.com/REPLACE_OWNER/REPLACE_APPLICATION_REPOSITORY.git
+    targetRevision: REPLACE_APPROVED_APPLICATION_COMMIT
+    path: helm/asteriq-ai-service
+    helm:
+      releaseName: asteriq
+      valueFiles:
+      - $values/app-of-apps/values/dev/asteriq-ai-service.yaml
+  - repoURL: https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+    targetRevision: REPLACE_IMMUTABLE_VALUES_COMMIT
+    ref: values
+  destination:
+    server: https://REPLACE_DEVELOPMENT_EKS_API_SERVER
+    namespace: asteriq-dev
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=false
+    - FailOnSharedResource=true
+    - PruneLast=true
+    - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+  revisionHistoryLimit: 10
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas

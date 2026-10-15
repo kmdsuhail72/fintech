@@ -1,0 +1,13 @@
+node_modules/
+.runtime/
+**/.venv/
+**/venv/
+**/dist/
+**/build/
+**/*.tsbuildinfo
+apps/ai-service/artifacts/
+package-lock.json
+helm/**/templates/
+apps/ai-service/.pytest_cache/
+ASTERIQ_AI_PRD.md
+.github/modernize/assessment/engines/facts/architecture-diagram.md

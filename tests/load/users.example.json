@@ -1,0 +1,11 @@
+[
+  {
+    "userId": "REPLACE_WITH_UNIQUE_SYNTHETIC_USER_UUID",
+    "accessToken": "REPLACE_WITH_SYNTHETIC_USER_JWT",
+    "refreshToken": "REPLACE_WITH_SYNTHETIC_USER_REFRESH_TOKEN",
+    "expiresAtMs": 0,
+    "portfolioId": "REPLACE_WITH_UNIQUE_USER_PORTFOLIO_UUID",
+    "symbolId": "REPLACE_WITH_SEEDED_ACTIVE_SYMBOL_UUID",
+    "symbol": "AAPL"
+  }
+]

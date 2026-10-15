@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: secrets-reader
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_SECRETS_READER_ROLE_ARN
+automountServiceAccountToken: false
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: aws-secrets
+spec:
+  provider:
+    aws:
+      service: SecretsManager
+      region: REPLACE_AWS_REGION
+      auth:
+        jwt:
+          serviceAccountRef:
+            name: secrets-reader
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: api-secrets
+spec:
+  refreshPolicy: Periodic
+  refreshInterval: 5m
+  secretStoreRef:
+    kind: SecretStore
+    name: aws-secrets
+  target:
+    name: api-secrets
+    creationPolicy: Owner
+    deletionPolicy: Retain
+  data:
+    - secretKey: DATABASE_URL
+      remoteRef:
+        key: REPLACE_SECRET_PREFIX/database-url
+    - secretKey: REDIS_URL
+      remoteRef:
+        key: REPLACE_SECRET_PREFIX/redis-url
+    - secretKey: JWT_ACCESS_SECRET
+      remoteRef:
+        key: REPLACE_SECRET_PREFIX/jwt
+    - secretKey: SMTP_URL
+      remoteRef:
+        key: REPLACE_SECRET_PREFIX/smtp
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ai-service-secrets
+spec:
+  refreshPolicy: Periodic
+  refreshInterval: 5m
+  secretStoreRef:
+    kind: SecretStore
+    name: aws-secrets
+  target:
+    name: ai-service-secrets
+    creationPolicy: Owner
+    deletionPolicy: Retain
+  data:
+    - secretKey: RAG_DATABASE_URL
+      remoteRef:
+        key: REPLACE_SECRET_PREFIX/rag-database-url
+    - secretKey: OPENAI_API_KEY
+      remoteRef:
+        key: REPLACE_SECRET_PREFIX/openai
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: migration-secrets
+spec:
+  refreshPolicy: Periodic
+  refreshInterval: 5m
+  secretStoreRef:
+    kind: SecretStore
+    name: aws-secrets
+  target:
+    name: migration-secrets
+    creationPolicy: Owner
+    deletionPolicy: Retain
+  data:
+    - secretKey: DATABASE_URL
+      remoteRef:
+        key: REPLACE_SECRET_PREFIX/migration-database-url

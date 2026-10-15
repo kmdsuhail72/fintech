@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: asteriq-otel
+  namespace: monitoring
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asteriq-otel
+  namespace: monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels: &id001
+      app.kubernetes.io/name: asteriq-otel
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      serviceAccountName: asteriq-otel
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels: *id001
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:REPLACE_APPROVED_COLLECTOR_VERSION
+          args:
+            - --config=/config/collector-config.yaml
+          ports:
+            - name: otlp-http
+              containerPort: 4318
+            - name: health
+              containerPort: 13133
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 10
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 10
+            failureThreshold: 30
+      volumes:
+        - name: config
+          configMap:
+            name: asteriq-otel
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asteriq-otel
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: asteriq-otel
+  ports:
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: asteriq-otel
+  namespace: monitoring
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: asteriq-otel

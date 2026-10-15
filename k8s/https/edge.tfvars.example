@@ -1,0 +1,5 @@
+# Merge with edge deployment inputs; obtain validation FQDNs from foundation.
+domain_name = "app.asteriq.ai"
+additional_domain_names = ["api.asteriq.ai"]
+certificate_validation_record_fqdn = "REPLACE_FOUNDATION_APP_VALIDATION_FQDN"
+additional_certificate_validation_record_fqdns = ["REPLACE_FOUNDATION_API_VALIDATION_FQDN"]

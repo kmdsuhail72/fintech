@@ -1,0 +1,30 @@
+fullnameOverride: api
+replicaCount: 1
+env:
+  ASTERIQ_ENVIRONMENT: dev
+  NODE_ENV: production
+  TRUST_PROXY_HOPS: '2'
+  CORS_ORIGINS: https://REPLACE_DEV_HOST
+  AUTH_WEB_URL: https://REPLACE_DEV_HOST
+  AUTH_EMAIL_FROM: REPLACE_DEV_SES_SENDER
+  AI_SERVICE_URL: http://ai-service:8000
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: '1'
+    memory: 512Mi
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 4
+scheduling:
+  zoneSpread: false
+image:
+  repository: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-dev/api
+  tag: REPLACE_RELEASE_TAG
+  digest: ''
+rdsCa:
+  enabled: true
+  existingConfigMap: rds-ca

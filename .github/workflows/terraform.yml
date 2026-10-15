@@ -1,0 +1,53 @@
+name: Terraform
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - infrastructure/terraform/**
+      - .github/workflows/terraform.yml
+  push:
+    branches: [main]
+    paths:
+      - infrastructure/terraform/**
+      - .github/workflows/terraform.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        root:
+          [
+            bootstrap,
+            environments/dev,
+            environments/staging,
+            environments/production,
+            modules/stack,
+          ]
+    defaults:
+      run:
+        working-directory: infrastructure/terraform/${{ matrix.root }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.14.4
+          terraform_wrapper: false
+      - name: Formatting
+        run: terraform fmt -check -recursive "$GITHUB_WORKSPACE/infrastructure/terraform"
+      - name: Initialize without AWS backend
+        run: terraform init -backend=false -input=false -lockfile=readonly
+      - name: Validate
+        run: terraform validate -no-color
+      - name: Offline production guardrail tests
+        if: matrix.root == 'modules/stack'
+        run: terraform test -no-color

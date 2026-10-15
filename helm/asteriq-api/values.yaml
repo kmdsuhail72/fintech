@@ -1,0 +1,135 @@
+nameOverride: ''
+fullnameOverride: ''
+replicaCount: 3
+image:
+  repository: asteriq/api
+  tag: 0.1.0
+  digest: ''
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+service:
+  type: ClusterIP
+  port: 3000
+  containerPort: 3000
+serviceAccount:
+  create: true
+  name: ''
+  annotations: {}
+  automountServiceAccountToken: false
+env:
+  API_PORT: '3000'
+  RUN_MIGRATIONS: 'false'
+  AI_SERVICE_URL: http://ai-asteriq-ai-service:8000
+  DEV_AUTH_TOKEN_OUTPUT: 'false'
+  OBSERVABILITY_ENABLED: 'true'
+  NODE_ENV: production
+  TRUST_PROXY_HOPS: '2'
+  AUTH_WEB_URL: https://asteriq.example.com
+  CORS_ORIGINS: https://asteriq.example.com
+  AUTH_EMAIL_FROM: notifications@example.com
+extraEnv: []
+existingSecrets:
+- api-secrets
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: '2'
+    memory: 1Gi
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+podAnnotations: {}
+nodeSelector:
+  kubernetes.io/arch: amd64
+  kubernetes.io/os: linux
+tolerations: []
+scheduling:
+  podAntiAffinity: true
+  zoneSpread: false
+revisionHistoryLimit: 5
+minReadySeconds: 10
+progressDeadlineSeconds: 600
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+terminationGracePeriodSeconds: 180
+preStopDelaySeconds: 35
+tmpSizeLimit: 128Mi
+probes:
+  startup:
+    enabled: true
+    httpGet:
+      path: /api/v1/health
+      port: http
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 60
+  readiness:
+    enabled: true
+    httpGet:
+      path: /api/v1/ready
+      port: http
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+  liveness:
+    enabled: true
+    httpGet:
+      path: /api/v1/health
+      port: http
+    timeoutSeconds: 3
+    periodSeconds: 10
+    failureThreshold: 3
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 65
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+  targetMemoryUtilizationPercentage: 80
+  additionalMetrics: []
+pdb:
+  enabled: true
+  maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
+ingress:
+  enabled: false
+  className: alb
+  annotations: {}
+  hosts: []
+  tls: []
+rdsCa:
+  enabled: false
+  existingConfigMap: rds-ca
+extraVolumes: []
+extraVolumeMounts: []

@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - ../../namespaces/staging
+  - ../../ingress
+  - ../../security/external-secrets
+  - managed-networkpolicies.yaml
+  - rds-ca.yaml
+namespace: asteriq-staging
+patches:
+  - path: application-config.yaml
+  - path: scaling.yaml
+  - path: aws-settings.yaml
+  - path: rds-mounts.yaml
+  - path: resources.yaml
+images:
+  - name: asteriq/frontend
+    newName: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-staging/web
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: asteriq/api
+    newName: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-staging/api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: asteriq/ai-service
+    newName: 000000000000.dkr.ecr.us-east-1.amazonaws.com/asteriq-staging/ai-service
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

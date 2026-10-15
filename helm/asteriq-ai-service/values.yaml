@@ -1,0 +1,135 @@
+nameOverride: ''
+fullnameOverride: ''
+replicaCount: 3
+image:
+  repository: asteriq/ai-service
+  tag: 0.1.0
+  digest: ''
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+service:
+  type: ClusterIP
+  port: 8000
+  containerPort: 8000
+serviceAccount:
+  create: true
+  name: ''
+  annotations: {}
+  automountServiceAccountToken: false
+env:
+  RESEARCH_BACKEND_URL: http://api-asteriq-api:3000/api/v1
+  NEWS_SENTIMENT_ENABLED: 'false'
+  OBSERVABILITY_ENABLED: 'true'
+  HF_HOME: /app/artifacts/huggingface
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTHONUNBUFFERED: '1'
+  APP_ENV: production
+extraEnv: []
+existingSecrets:
+- ai-service-secrets
+resources:
+  requests:
+    cpu: '1'
+    memory: 2Gi
+  limits:
+    cpu: '2'
+    memory: 4Gi
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+podAnnotations: {}
+nodeSelector:
+  kubernetes.io/arch: amd64
+  kubernetes.io/os: linux
+tolerations: []
+scheduling:
+  podAntiAffinity: true
+  zoneSpread: false
+revisionHistoryLimit: 5
+minReadySeconds: 10
+progressDeadlineSeconds: 600
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+terminationGracePeriodSeconds: 180
+preStopDelaySeconds: 35
+tmpSizeLimit: 128Mi
+probes:
+  startup:
+    enabled: true
+    httpGet:
+      path: /health/live
+      port: http
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 60
+  readiness:
+    enabled: true
+    httpGet:
+      path: /health/ready
+      port: http
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+  liveness:
+    enabled: true
+    httpGet:
+      path: /health/live
+      port: http
+    timeoutSeconds: 3
+    periodSeconds: 10
+    failureThreshold: 3
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 65
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+  targetMemoryUtilizationPercentage: 80
+  additionalMetrics: []
+pdb:
+  enabled: true
+  maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
+ingress:
+  enabled: false
+  className: alb
+  annotations: {}
+  hosts: []
+  tls: []
+rdsCa:
+  enabled: false
+  existingConfigMap: rds-ca
+extraVolumes: []
+extraVolumeMounts: []
+ai:
+  gracefulShutdownSeconds: 100
+  artifactsSizeLimit: 1Gi

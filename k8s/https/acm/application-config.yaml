@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+data:
+  CORS_ORIGINS: https://app.asteriq.ai
+  AUTH_WEB_URL: https://app.asteriq.ai
+  TRUST_PROXY_HOPS: '2'

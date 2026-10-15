@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: asteriq-otel
+  namespace: monitoring
+spec:
+  secretName: asteriq-otel-tls
+  dnsNames:
+    - asteriq-otel.monitoring.svc
+    - asteriq-otel.monitoring.svc.cluster.local
+  issuerRef:
+    kind: ClusterIssuer
+    name: REPLACE_APPROVED_INTERNAL_CA_ISSUER

@@ -1,0 +1,28 @@
+alloy:
+  configMap:
+    create: false
+    key: config.alloy
+    name: asteriq-alloy
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: ASTERIQ_ENVIRONMENT
+      value: staging
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+controller:
+  tolerations:
+    - operator: Exists
+  type: daemonset
+rbac:
+  create: false
+serviceAccount:
+  create: true
+  name: asteriq-alloy

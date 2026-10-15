@@ -1,0 +1,6 @@
+.git/
+.runtime/
+.secrets/
+.env*
+tests/
+*.log

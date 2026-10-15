@@ -1,0 +1,20 @@
+replicaCount: 1
+serviceAccount:
+  create: true
+  name: asteriq-alb-metrics
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_CLOUDWATCH_READ_ROLE_ARN
+serviceMonitor:
+  enabled: true
+  labels:
+    asteriq.ai/monitoring: enabled
+  interval: 60s
+config: "region: REPLACE_AWS_REGION\nperiod_seconds: 300\nrange_seconds: 600\ndelay_seconds:\
+  \ 120\nset_timestamp: false\nmetrics:\n- aws_namespace: AWS/ApplicationELB\n  aws_metric_name:\
+  \ RequestCount\n  aws_dimensions:\n  - LoadBalancer\n  aws_dimension_select:\n \
+  \   LoadBalancer:\n    - REPLACE_ALB_ARN_SUFFIX\n  aws_statistics:\n  - Sum\n- aws_namespace:\
+  \ AWS/ApplicationELB\n  aws_metric_name: HTTPCode_ELB_5XX_Count\n  aws_dimensions:\n\
+  \  - LoadBalancer\n  aws_dimension_select:\n    LoadBalancer:\n    - REPLACE_ALB_ARN_SUFFIX\n\
+  \  aws_statistics:\n  - Sum\n- aws_namespace: AWS/ApplicationELB\n  aws_metric_name:\
+  \ HTTPCode_Target_5XX_Count\n  aws_dimensions:\n  - LoadBalancer\n  aws_dimension_select:\n\
+  \    LoadBalancer:\n    - REPLACE_ALB_ARN_SUFFIX\n  aws_statistics:\n  - Sum\n"

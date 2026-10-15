@@ -1,0 +1,49 @@
+# Certificate provisioning example only: applications still need TLS listeners
+# or a verified mTLS proxy/mesh. Never commit the CA Secret's private key.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: asteriq-internal-ca
+spec:
+  ca:
+    secretName: managed-asteriq-internal-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: api-internal
+  namespace: asteriq-production
+spec:
+  secretName: api-internal-tls
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    - api.asteriq-production.svc
+    - api.asteriq-production.svc.cluster.local
+  issuerRef:
+    name: asteriq-internal-ca
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ai-internal
+  namespace: asteriq-production
+spec:
+  secretName: ai-internal-tls
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    - ai-service.asteriq-production.svc
+    - ai-service.asteriq-production.svc.cluster.local
+  issuerRef:
+    name: asteriq-internal-ca
+    kind: ClusterIssuer

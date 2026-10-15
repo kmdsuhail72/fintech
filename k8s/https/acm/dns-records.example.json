@@ -1,0 +1,29 @@
+{
+  "Comment": "Direct ALB mode only: both hostnames point to the selected HTTPS ALB",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "app.asteriq.ai",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "REPLACE_ALB_HOSTED_ZONE_ID",
+          "DNSName": "REPLACE_ALB_DNS_NAME",
+          "EvaluateTargetHealth": true
+        }
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "api.asteriq.ai",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "REPLACE_ALB_HOSTED_ZONE_ID",
+          "DNSName": "REPLACE_ALB_DNS_NAME",
+          "EvaluateTargetHealth": true
+        }
+      }
+    }
+  ]
+}

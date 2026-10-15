@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Asteriq AI",
+    "slug": "asteriq-ai",
+    "scheme": "asteriq",
+    "version": "0.2.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.asteriq.ai"
+    },
+    "android": {
+      "package": "com.asteriq.ai"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Asteriq AI to use Face ID to unlock this app."
+        }
+      ],
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0b1120"
+        }
+      ]
+    ]
+  }
+}

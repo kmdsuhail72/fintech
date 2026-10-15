@@ -1,0 +1,161 @@
+discovery.kubernetes "pods" {
+  role = "pod"
+  selectors {
+    role = "pod"
+    field = "spec.nodeName=" + sys.env("NODE_NAME")
+  }
+}
+
+discovery.relabel "asteriq" {
+  targets = discovery.kubernetes.pods.targets
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    regex = "asteriq-(dev|staging|production)|kube-system|ingress-nginx|ingress-system|cert-manager|monitoring"
+    action = "keep"
+  }
+  // Avoid feedback loops from this logging pipeline itself.
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+    regex = "alloy|loki.*"
+    action = "drop"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label = "namespace"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_node_name"]
+    target_label = "node"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label = "pod"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label = "container"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label = "service"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+    regex = "(.+)"
+    target_label = "service"
+  }
+  rule {
+    source_labels = ["service"]
+    regex = "frontend"
+    target_label = "service"
+    replacement = "web"
+  }
+  rule {
+    target_label = "environment"
+    replacement = sys.env("ASTERIQ_ENVIRONMENT")
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    regex = "asteriq-(dev|staging|production)"
+    target_label = "environment"
+    replacement = "$1"
+  }
+}
+
+loki.source.kubernetes "asteriq" {
+  targets = discovery.relabel.asteriq.output
+  forward_to = [loki.process.asteriq.receiver]
+}
+
+loki.process "asteriq" {
+  forward_to = [loki.write.asteriq.receiver]
+  stage.decolorize {}
+  stage.replace {
+    expression = "(?i)Bearer ([^\\s\\\"]+)"
+    replace = "[REDACTED]"
+  }
+  stage.replace {
+    expression = "(?:postgres(?:ql)?|rediss?|smtps?)://([^@\\s]+)@"
+    replace = "[REDACTED]"
+  }
+  stage.replace {
+    expression = `(?i)"(?:password|authorization|token|access_token|refresh_token|secret|cookie|api_key|email|user_id|userId)"\s*:\s*"((?:[^"\\]|\\.)*)"`
+    replace = "[REDACTED]"
+  }
+  stage.replace {
+    expression = `(?i)[?&](?:token|code|password|secret|api_key|access_token|refresh_token)=([^&\s"\\]+)`
+    replace = "[REDACTED]"
+  }
+  stage.replace {
+    expression = `([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})`
+    replace = "[REDACTED_EMAIL]"
+  }
+  // Pack trusted discovery metadata, then extract it into the normalized body.
+  stage.pack {
+    labels = ["namespace", "pod", "node", "container", "service", "environment"]
+    ingest_timestamp = false
+  }
+  stage.json {
+    expressions = {
+      namespace = "namespace",
+      pod = "pod",
+      node = "node",
+      container = "container",
+      service = "service",
+      environment = "environment",
+      entry = "_entry",
+    }
+  }
+  stage.json {
+    source = "entry"
+    expressions = {
+      timestamp = "timestamp",
+      level = "level",
+      message = "message || msg",
+      request_id = "request_id || requestId",
+      trace_id = "trace_id || traceId",
+      user_safe_identifier = "user_safe_identifier",
+      endpoint = "endpoint || route",
+      status_code = "status_code || status",
+      event = "event",
+      method = "method",
+    }
+    drop_malformed = false
+  }
+  stage.template {
+    source = "level"
+    template = `{{ $v := ToLower (printf "%v" (default "unknown" .Value)) }}{{ if eq $v "warning" }}warn{{ else if regexMatch "^(debug|info|warn|error|fatal|panic)$" $v }}{{ $v }}{{ else if regexMatch "^(E[0-9]{4}|F[0-9]{4})|\\[(error|crit|alert|emerg)\\]" .entry }}error{{ else if regexMatch "^W[0-9]{4}|\\[warn\\]" .entry }}warn{{ else }}unknown{{ end }}`
+  }
+  stage.template {
+    source = "user_safe_identifier"
+    template = `{{ if regexMatch "^[a-f0-9]{24}$" (printf "%v" (default "" .Value)) }}{{ .Value }}{{ end }}`
+  }
+  stage.template {
+    source = "normalized"
+    template = `{{ $message := default .entry .message }}{{ if and (not .message) (hasPrefix "{" .entry) }}{{ $message = "Structured container event" }}{{ end }}{{ dict "timestamp" (default (now | date "2006-01-02T15:04:05.000Z07:00") .timestamp) "service" .service "environment" .environment "namespace" .namespace "pod" .pod "node" .node "container" .container "level" .level "request_id" (default "" .request_id) "trace_id" (default "" .trace_id) "user_safe_identifier" (default "" .user_safe_identifier) "endpoint" (default "" .endpoint) "status_code" (default "" .status_code) "event" (default "container_log" .event) "method" (default "" .method) "message" $message | toJson }}`
+  }
+  // Only bounded inventory/severity fields become Loki index labels.
+  stage.labels {
+    values = {
+      namespace = "",
+      node = "",
+      service = "",
+      environment = "",
+      container = "",
+      level = "",
+    }
+  }
+  stage.label_keep {
+    values = ["namespace", "node", "service", "environment", "container", "level"]
+  }
+  stage.output {
+    source = "normalized"
+  }
+}
+
+loki.write "asteriq" {
+  endpoint {
+    url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+    tenant_id = "asteriq"
+  }
+}

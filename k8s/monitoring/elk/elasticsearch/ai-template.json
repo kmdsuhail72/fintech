@@ -1,0 +1,81 @@
+{
+  "index_patterns": ["asteriq-*-ai-*"],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "asteriq-ai"
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "service": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "environment": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "namespace": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "pod": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "container": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "node": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "level": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "request_id": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "trace_id": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "user_safe_identifier": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "endpoint": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "event": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "category": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "es_index_prefix": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "@timestamp": {
+          "type": "date"
+        },
+        "status_code": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "text"
+        }
+      }
+    }
+  }
+}

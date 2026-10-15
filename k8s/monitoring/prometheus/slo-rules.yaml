@@ -1,0 +1,492 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: asteriq-slo
+  namespace: monitoring
+  labels:
+    asteriq.ai/monitoring: enabled
+spec:
+  groups:
+  - name: asteriq.slo.recording
+    interval: 1m
+    rules:
+    - record: asteriq:slo_bad_ratio:5m
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[5m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[5m]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[5m]))),
+        0), 1)
+      labels: &id001
+        slo: api-availability
+        service: api
+    - record: asteriq:slo_burn_rate:5m
+      expr: asteriq:slo_bad_ratio:5m{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:30m
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[30m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[30m]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[30m]))),
+        0), 1)
+      labels: *id001
+    - record: asteriq:slo_burn_rate:30m
+      expr: asteriq:slo_bad_ratio:30m{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:1h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[1h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[1h]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[1h]))),
+        0), 1)
+      labels: *id001
+    - record: asteriq:slo_burn_rate:1h
+      expr: asteriq:slo_bad_ratio:1h{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:2h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[2h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[2h]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[2h]))),
+        0), 1)
+      labels: *id001
+    - record: asteriq:slo_burn_rate:2h
+      expr: asteriq:slo_bad_ratio:2h{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:6h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[6h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[6h]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[6h]))),
+        0), 1)
+      labels: *id001
+    - record: asteriq:slo_burn_rate:6h
+      expr: asteriq:slo_bad_ratio:6h{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:1d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[1d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[1d]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[1d]))),
+        0), 1)
+      labels: *id001
+    - record: asteriq:slo_burn_rate:1d
+      expr: asteriq:slo_bad_ratio:1d{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:3d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[3d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[3d]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[3d]))),
+        0), 1)
+      labels: *id001
+    - record: asteriq:slo_burn_rate:3d
+      expr: asteriq:slo_bad_ratio:3d{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:30d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"429|499|5.."}[30d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[30d]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[30d]))),
+        0), 1)
+      labels: *id001
+    - record: asteriq:slo_burn_rate:30d
+      expr: asteriq:slo_bad_ratio:30d{slo="api-availability"} / 0.001000
+      labels: *id001
+    - record: asteriq:slo_objective:ratio
+      expr: 0 * sum by(namespace)(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."})
+        + 0.999
+      labels: *id001
+    - record: asteriq:slo_requests:30d
+      expr: sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",method!="OPTIONS",status=~"[23]..|429|499|5.."}[30d]))
+      labels: *id001
+    - record: asteriq:slo_budget_remaining:ratio
+      expr: 1 - asteriq:slo_burn_rate:30d{slo="api-availability"}
+      labels: *id001
+    - record: asteriq:slo_bad_ratio:5m
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[5m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[5m]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[5m]))),
+        0), 1)
+      labels: &id002
+        slo: trade-success
+        service: api
+    - record: asteriq:slo_burn_rate:5m
+      expr: asteriq:slo_bad_ratio:5m{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:30m
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[30m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[30m]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[30m]))),
+        0), 1)
+      labels: *id002
+    - record: asteriq:slo_burn_rate:30m
+      expr: asteriq:slo_bad_ratio:30m{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:1h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[1h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[1h]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[1h]))),
+        0), 1)
+      labels: *id002
+    - record: asteriq:slo_burn_rate:1h
+      expr: asteriq:slo_bad_ratio:1h{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:2h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[2h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[2h]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[2h]))),
+        0), 1)
+      labels: *id002
+    - record: asteriq:slo_burn_rate:2h
+      expr: asteriq:slo_bad_ratio:2h{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:6h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[6h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[6h]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[6h]))),
+        0), 1)
+      labels: *id002
+    - record: asteriq:slo_burn_rate:6h
+      expr: asteriq:slo_bad_ratio:6h{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:1d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[1d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[1d]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[1d]))),
+        0), 1)
+      labels: *id002
+    - record: asteriq:slo_burn_rate:1d
+      expr: asteriq:slo_bad_ratio:1d{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:3d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[3d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[3d]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[3d]))),
+        0), 1)
+      labels: *id002
+    - record: asteriq:slo_burn_rate:3d
+      expr: asteriq:slo_bad_ratio:3d{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:30d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"429|499|5.."}[30d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[30d]))))
+        / sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[30d]))),
+        0), 1)
+      labels: *id002
+    - record: asteriq:slo_burn_rate:30d
+      expr: asteriq:slo_bad_ratio:30d{slo="trade-success"} / 0.000500
+      labels: *id002
+    - record: asteriq:slo_objective:ratio
+      expr: 0 * sum by(namespace)(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."})
+        + 0.9995
+      labels: *id002
+    - record: asteriq:slo_requests:30d
+      expr: sum by(namespace)(increase(asteriq_http_requests_total{namespace=~"asteriq-(dev|staging|production)",operation="trading",method="POST",status=~"[23]..|429|499|5.."}[30d]))
+      labels: *id002
+    - record: asteriq:slo_budget_remaining:ratio
+      expr: 1 - asteriq:slo_burn_rate:30d{slo="trade-success"}
+      labels: *id002
+    - record: asteriq:slo_bad_ratio:5m
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[5m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[5m]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[5m])))),
+        0), 1)
+      labels: &id003
+        slo: api-latency
+        service: api
+    - record: asteriq:slo_burn_rate:5m
+      expr: asteriq:slo_bad_ratio:5m{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:30m
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[30m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[30m]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[30m])))),
+        0), 1)
+      labels: *id003
+    - record: asteriq:slo_burn_rate:30m
+      expr: asteriq:slo_bad_ratio:30m{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:1h
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[1h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[1h]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[1h])))),
+        0), 1)
+      labels: *id003
+    - record: asteriq:slo_burn_rate:1h
+      expr: asteriq:slo_bad_ratio:1h{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:2h
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[2h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[2h]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[2h])))),
+        0), 1)
+      labels: *id003
+    - record: asteriq:slo_burn_rate:2h
+      expr: asteriq:slo_bad_ratio:2h{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:6h
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[6h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[6h]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[6h])))),
+        0), 1)
+      labels: *id003
+    - record: asteriq:slo_burn_rate:6h
+      expr: asteriq:slo_bad_ratio:6h{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:1d
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[1d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[1d]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[1d])))),
+        0), 1)
+      labels: *id003
+    - record: asteriq:slo_burn_rate:1d
+      expr: asteriq:slo_bad_ratio:1d{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:3d
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[3d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[3d]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[3d])))),
+        0), 1)
+      labels: *id003
+    - record: asteriq:slo_burn_rate:3d
+      expr: asteriq:slo_bad_ratio:3d{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:30d
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_http_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research",le="0.5"}[30d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[30d]))))
+        / sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[30d])))),
+        0), 1)
+      labels: *id003
+    - record: asteriq:slo_burn_rate:30d
+      expr: asteriq:slo_bad_ratio:30d{slo="api-latency"} / 0.050000
+      labels: *id003
+    - record: asteriq:slo_objective:ratio
+      expr: 0 * sum by(namespace)(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"})
+        + 0.95
+      labels: *id003
+    - record: asteriq:slo_requests:30d
+      expr: sum by(namespace)(increase(asteriq_http_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation!~"health|research"}[30d]))
+      labels: *id003
+    - record: asteriq:slo_budget_remaining:ratio
+      expr: 1 - asteriq:slo_burn_rate:30d{slo="api-latency"}
+      labels: *id003
+    - record: asteriq:slo_bad_ratio:5m
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[5m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[5m]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[5m]))),
+        0), 1)
+      labels: &id004
+        slo: ai-availability
+        service: ai-service
+    - record: asteriq:slo_burn_rate:5m
+      expr: asteriq:slo_bad_ratio:5m{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:30m
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[30m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[30m]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[30m]))),
+        0), 1)
+      labels: *id004
+    - record: asteriq:slo_burn_rate:30m
+      expr: asteriq:slo_bad_ratio:30m{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:1h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[1h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[1h]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[1h]))),
+        0), 1)
+      labels: *id004
+    - record: asteriq:slo_burn_rate:1h
+      expr: asteriq:slo_bad_ratio:1h{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:2h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[2h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[2h]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[2h]))),
+        0), 1)
+      labels: *id004
+    - record: asteriq:slo_burn_rate:2h
+      expr: asteriq:slo_bad_ratio:2h{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:6h
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[6h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[6h]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[6h]))),
+        0), 1)
+      labels: *id004
+    - record: asteriq:slo_burn_rate:6h
+      expr: asteriq:slo_bad_ratio:6h{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:1d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[1d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[1d]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[1d]))),
+        0), 1)
+      labels: *id004
+    - record: asteriq:slo_burn_rate:1d
+      expr: asteriq:slo_bad_ratio:1d{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:3d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[3d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[3d]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[3d]))),
+        0), 1)
+      labels: *id004
+    - record: asteriq:slo_burn_rate:3d
+      expr: asteriq:slo_bad_ratio:3d{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:30d
+      expr: clamp_max(clamp_min(((sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"429|499|5.."}[30d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[30d]))))
+        / sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[30d]))),
+        0), 1)
+      labels: *id004
+    - record: asteriq:slo_burn_rate:30d
+      expr: asteriq:slo_bad_ratio:30d{slo="ai-availability"} / 0.001000
+      labels: *id004
+    - record: asteriq:slo_objective:ratio
+      expr: 0 * sum by(namespace)(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."})
+        + 0.999
+      labels: *id004
+    - record: asteriq:slo_requests:30d
+      expr: sum by(namespace)(increase(asteriq_ai_requests_total{namespace=~"asteriq-(dev|staging|production)",operation!="health",status=~"[23]..|429|499|5.."}[30d]))
+      labels: *id004
+    - record: asteriq:slo_budget_remaining:ratio
+      expr: 1 - asteriq:slo_burn_rate:30d{slo="ai-availability"}
+      labels: *id004
+    - record: asteriq:slo_bad_ratio:5m
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[5m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[5m]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[5m])))),
+        0), 1)
+      labels: &id005
+        slo: ai-research-latency
+        service: ai-service
+    - record: asteriq:slo_burn_rate:5m
+      expr: asteriq:slo_bad_ratio:5m{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_bad_ratio:30m
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[30m]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[30m]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[30m])))),
+        0), 1)
+      labels: *id005
+    - record: asteriq:slo_burn_rate:30m
+      expr: asteriq:slo_bad_ratio:30m{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_bad_ratio:1h
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[1h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[1h]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[1h])))),
+        0), 1)
+      labels: *id005
+    - record: asteriq:slo_burn_rate:1h
+      expr: asteriq:slo_bad_ratio:1h{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_bad_ratio:2h
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[2h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[2h]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[2h])))),
+        0), 1)
+      labels: *id005
+    - record: asteriq:slo_burn_rate:2h
+      expr: asteriq:slo_bad_ratio:2h{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_bad_ratio:6h
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[6h]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[6h]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[6h])))),
+        0), 1)
+      labels: *id005
+    - record: asteriq:slo_burn_rate:6h
+      expr: asteriq:slo_bad_ratio:6h{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_bad_ratio:1d
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[1d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[1d]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[1d])))),
+        0), 1)
+      labels: *id005
+    - record: asteriq:slo_burn_rate:1d
+      expr: asteriq:slo_bad_ratio:1d{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_bad_ratio:3d
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[3d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[3d]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[3d])))),
+        0), 1)
+      labels: *id005
+    - record: asteriq:slo_burn_rate:3d
+      expr: asteriq:slo_bad_ratio:3d{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_bad_ratio:30d
+      expr: clamp_max(clamp_min((1 - ((sum by(namespace)(increase(asteriq_ai_request_duration_seconds_bucket{namespace=~"asteriq-(dev|staging|production)",operation="research",le="5.0"}[30d]))
+        or on(namespace) (0 * sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[30d]))))
+        / sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[30d])))),
+        0), 1)
+      labels: *id005
+    - record: asteriq:slo_burn_rate:30d
+      expr: asteriq:slo_bad_ratio:30d{slo="ai-research-latency"} / 0.050000
+      labels: *id005
+    - record: asteriq:slo_objective:ratio
+      expr: 0 * sum by(namespace)(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"})
+        + 0.95
+      labels: *id005
+    - record: asteriq:slo_requests:30d
+      expr: sum by(namespace)(increase(asteriq_ai_request_duration_seconds_count{namespace=~"asteriq-(dev|staging|production)",operation="research"}[30d]))
+      labels: *id005
+    - record: asteriq:slo_budget_remaining:ratio
+      expr: 1 - asteriq:slo_burn_rate:30d{slo="ai-research-latency"}
+      labels: *id005
+  - name: asteriq.slo.alerts
+    rules:
+    - alert: AsteriqSLOBurnFast
+      expr: (asteriq:slo_burn_rate:1h > 14.4) and on(namespace,service,slo) (asteriq:slo_burn_rate:5m
+        > 14.4)
+      for: 2m
+      labels:
+        severity: critical
+        alert_family: slo-burn
+      annotations:
+        summary: '{{ $labels.slo }} error budget is burning'
+        description: Both 1h and 5m exceed 14.4x burn. Page; acknowledge within 5
+          minutes. Inspect the SLO dashboard and confirm customer impact.
+        runbook_url: https://github.com/REPLACE_OWNER/REPLACE_REPO/blob/main/k8s/monitoring/slo/README.md
+    - alert: AsteriqSLOBurnSustained
+      expr: (asteriq:slo_burn_rate:6h > 6) and on(namespace,service,slo) (asteriq:slo_burn_rate:30m
+        > 6)
+      for: 2m
+      labels:
+        severity: critical
+        alert_family: slo-burn
+      annotations:
+        summary: '{{ $labels.slo }} error budget is burning'
+        description: Both 6h and 30m exceed 6x burn. Page; acknowledge within 5 minutes.
+          Inspect the SLO dashboard and confirm customer impact.
+        runbook_url: https://github.com/REPLACE_OWNER/REPLACE_REPO/blob/main/k8s/monitoring/slo/README.md
+    - alert: AsteriqSLOBurnSlow
+      expr: (asteriq:slo_burn_rate:1d > 3) and on(namespace,service,slo) (asteriq:slo_burn_rate:2h
+        > 3)
+      for: 2m
+      labels:
+        severity: warning
+        alert_family: slo-burn
+      annotations:
+        summary: '{{ $labels.slo }} error budget is burning'
+        description: Both 1d and 2h exceed 3x burn. Create incident ticket; triage
+          within 4 hours. Inspect the SLO dashboard and confirm customer impact.
+        runbook_url: https://github.com/REPLACE_OWNER/REPLACE_REPO/blob/main/k8s/monitoring/slo/README.md
+    - alert: AsteriqSLOBurnPersistent
+      expr: (asteriq:slo_burn_rate:3d > 1) and on(namespace,service,slo) (asteriq:slo_burn_rate:6h
+        > 1)
+      for: 2m
+      labels:
+        severity: info
+        alert_family: slo-burn
+      annotations:
+        summary: '{{ $labels.slo }} error budget is burning'
+        description: Both 3d and 6h exceed 1x burn. Review within one business day.
+          Inspect the SLO dashboard and confirm customer impact.
+        runbook_url: https://github.com/REPLACE_OWNER/REPLACE_REPO/blob/main/k8s/monitoring/slo/README.md
+    - alert: AsteriqSLOBudgetExhausted
+      expr: asteriq:slo_budget_remaining:ratio <= 0
+      for: 15m
+      labels:
+        severity: warning
+        alert_family: slo-budget
+      annotations:
+        summary: '{{ $labels.slo }} 30-day error budget exhausted'
+        description: Freeze risk-increasing releases; prioritize reliability recovery.
+          Validate coverage before declaring compliance.

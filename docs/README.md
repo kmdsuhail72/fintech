@@ -1,0 +1,27 @@
+# Asteriq AI documentation
+
+- [Product requirements](../ASTERIQ_AI_PRD.md)
+- [System architecture](../.github/modernize/assessment/engines/facts/architecture-diagram.md)
+- [PostgreSQL database design](./database-design.md)
+- [Authentication implementation](./authentication.md)
+- [REST API and Socket.IO contract](./api.md)
+- [AI research microservice](../apps/ai-service/README.md)
+- [Financial news sentiment](../apps/ai-service/NEWS_SENTIMENT.md)
+- [Experimental ML pipeline](../apps/ai-service/ML_PIPELINE.md)
+- [Initial PostgreSQL migration](../database/migrations/001_initial_schema.sql)
+- [Monorepo setup and local development](../README.md)
+- [AWS Terraform infrastructure](../infrastructure/terraform/README.md)
+- [Kubernetes/EKS manifests, architecture and deployment runbook](../k8s/README.md)
+- [Helm charts and environment values](../helm/README.md)
+- [Argo CD GitOps, promotion, drift detection and rollback](../gitops/README.md)
+- [CI/CD setup](./ci-cd.md)
+- [Security design review](./security-review.md)
+- [Automated testing strategy and sample cases](./testing-strategy.md)
+- [CloudWatch observability stack](./observability.md)
+- [Prometheus-backed Grafana dashboards](../k8s/monitoring/grafana/README.md)
+- [Alertmanager rules, routing and alert-storm controls](../k8s/monitoring/alertmanager/README.md)
+- [Centralized Loki/Alloy logging and LogQL queries](../k8s/monitoring/loki/README.md)
+- [Elasticsearch/Fluent Bit/Kibana logging alternative](../k8s/monitoring/elk/README.md)
+- [10,000-user k6 load-test design](./load-testing.md)
+
+Keep service-specific runbooks, API contract decisions, data-retention policies, and operational procedures in this folder as they are defined.

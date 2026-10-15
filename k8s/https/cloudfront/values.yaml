@@ -1,0 +1,11 @@
+# Merge after acm/values.yaml for the existing CloudFront/WAF EKS architecture.
+asteriq-web:
+  ingress:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: asteriq-production-eks-web
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/security-groups: REPLACE_FOUNDATION_ALB_SECURITY_GROUP_ID
+      alb.ingress.kubernetes.io/manage-backend-security-group-rules: 'false'
+asteriq-api:
+  env:
+    TRUST_PROXY_HOPS: '3'

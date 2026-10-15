@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asteriq-otel
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+        - name: collector
+          volumeMounts:
+            - name: collector-tls
+              mountPath: /collector-tls
+              readOnly: true
+      volumes:
+        - name: collector-tls
+          secret:
+            secretName: asteriq-otel-tls

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: asteriq-control-plane
+  namespace: argocd
+spec:
+  description: 'Privileged bootstrap boundary: platform administrators only'
+  sourceRepos:
+    - https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: argoproj.io
+      kind: Application
+  roles:
+    - name: platform-admin
+      groups:
+        - asteriq-platform-admins
+      policies:
+        - p, proj:asteriq-control-plane:platform-admin, applications, get, asteriq-control-plane/*,
+          allow
+        - p, proj:asteriq-control-plane:platform-admin, applications, sync, asteriq-control-plane/*,
+          allow

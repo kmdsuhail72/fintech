@@ -1,0 +1,32 @@
+asteriq-api:
+  env:
+    OTEL_ENABLED: 'true'
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: https://asteriq-otel.monitoring.svc:4318/v1/traces
+    OTEL_TRACE_SAMPLE_RATIO: '0.1'
+  extraVolumes:
+    - name: tracing-ca
+      configMap:
+        name: tracing-client-ca
+  extraVolumeMounts:
+    - name: tracing-ca
+      mountPath: /etc/tracing-ca
+      readOnly: true
+  extraEnv:
+    - name: NODE_EXTRA_CA_CERTS
+      value: /etc/tracing-ca/combined-ca.pem
+asteriq-ai-service:
+  env:
+    OTEL_ENABLED: 'true'
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: https://asteriq-otel.monitoring.svc:4318/v1/traces
+    OTEL_TRACE_SAMPLE_RATIO: '0.1'
+  extraVolumes:
+    - name: tracing-ca
+      configMap:
+        name: tracing-client-ca
+  extraVolumeMounts:
+    - name: tracing-ca
+      mountPath: /etc/tracing-ca
+      readOnly: true
+  extraEnv:
+    - name: OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE
+      value: /etc/tracing-ca/combined-ca.pem

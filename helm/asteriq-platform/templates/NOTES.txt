@@ -1,0 +1,4 @@
+Asteriq platform release {{ .Release.Name }} in {{ .Release.Namespace }}.
+Environment profile: {{ .Values.environment }}
+Inspect workloads: kubectl -n {{ .Release.Namespace }} get deploy,svc,hpa,pdb,ingress
+Runtime Secrets, namespace security and database migrations are platform prerequisites.

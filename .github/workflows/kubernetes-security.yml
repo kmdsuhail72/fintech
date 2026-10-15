@@ -1,0 +1,60 @@
+name: Kubernetes security policies
+on:
+  pull_request:
+    paths:
+      - 'k8s/**'
+      - 'helm/**'
+      - 'infrastructure/eks/**'
+      - 'scripts/kubernetes/**'
+      - '.github/workflows/kubernetes-security.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admission-and-manifests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python -m pip install -r scripts/kubernetes/requirements.txt pytest==8.3.5
+      - name: Install checksum-pinned Kyverno CLI
+        env:
+          TOOL_ARCHIVE: kyverno-cli_v1.19.1_linux_x86_64.tar.gz
+        run: |
+          mkdir -p .runtime/security-tools/kyverno
+          curl --fail --location --retry 3 --output ".runtime/security-tools/$TOOL_ARCHIVE" "https://github.com/kyverno/kyverno/releases/download/v1.19.1/$TOOL_ARCHIVE"
+          printf '%s  %s\n' 'b38228f367fc0fdc2b08f4c83ea50ac5f16c60ff8d62d76a66157c33c47b70ae' ".runtime/security-tools/$TOOL_ARCHIVE" | sha256sum --check
+          tar -xzf ".runtime/security-tools/$TOOL_ARCHIVE" -C .runtime/security-tools/kyverno
+          echo "KYVERNO_BIN=$GITHUB_WORKSPACE/.runtime/security-tools/kyverno/kyverno" >> "$GITHUB_ENV"
+      - name: Render application security scan input
+        run: |
+          mkdir -p .runtime
+          printf 'apiVersion: v1\nrepositories: []\n' > .runtime/helm-local-repositories.yaml
+          helm dependency build helm/asteriq-platform --skip-refresh --repository-config .runtime/helm-local-repositories.yaml
+          python scripts/kubernetes/demo_eks.py
+      - name: Test real admission evaluation and least-privilege RBAC
+        run: python -m pytest scripts/kubernetes/tests/test_security_policies.py scripts/kubernetes/tests/test_https.py scripts/kubernetes/tests/test_secrets.py scripts/kubernetes/tests/test_resilience.py -q -p no:cacheprovider
+      - name: Scan rendered Kubernetes configuration
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          scan-type: config
+          scan-ref: .runtime/eks-demo.yaml
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: json
+          output: kubernetes-security.json
+          timeout: 5m
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: kubernetes-security-report
+          path: kubernetes-security.json
+          if-no-files-found: warn
+          retention-days: 14

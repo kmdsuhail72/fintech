@@ -1,0 +1,3 @@
+Release {{ .Release.Name }} runs in {{ .Release.Namespace }}.
+Inspect: kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "asteriq-web.fullname" . }}
+Existing Secrets and platform network policies must be provisioned separately.

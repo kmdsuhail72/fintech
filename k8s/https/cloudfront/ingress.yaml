@@ -1,0 +1,9 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: asteriq
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: asteriq-production-eks-web
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/security-groups: REPLACE_FOUNDATION_ALB_SECURITY_GROUP_ID
+    alb.ingress.kubernetes.io/manage-backend-security-group-rules: 'false'

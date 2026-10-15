@@ -1,0 +1,6 @@
+bucket       = "REPLACE_KMS_ENCRYPTED_STATE_BUCKET"
+key          = "eks/production/edge.tfstate"
+region       = "REPLACE_STATE_BUCKET_REGION"
+encrypt      = true
+kms_key_id   = "REPLACE_STATE_KMS_KEY_ARN"
+use_lockfile = true

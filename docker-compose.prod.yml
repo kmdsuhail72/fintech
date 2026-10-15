@@ -1,0 +1,37 @@
+# Apply only with docker-compose.yml, never with docker-compose.dev.yml.
+name: asteriq-ai-prod
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your production env file}
+  redis:
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in your production env file}
+    command:
+      [
+        'sh',
+        '-c',
+        'exec redis-server --appendonly yes --appendfsync everysec --maxmemory-policy noeviction --requirepass "$$REDIS_PASSWORD"',
+      ]
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+  api:
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL using the internal postgres host}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL using the internal redis host}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set a strong JWT_ACCESS_SECRET}
+      CORS_ORIGINS: ${SITE_URL:?Set the public HTTPS SITE_URL}
+      AUTH_WEB_URL: ${SITE_URL:?Set the public HTTPS SITE_URL}
+      SMTP_URL: ${SMTP_URL:?Set SMTP_URL for production authentication and notifications}
+      AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:?Set AUTH_EMAIL_FROM}
+      DEV_AUTH_TOKEN_OUTPUT: 'false'
+    security_opt: ['no-new-privileges:true']
+  ai-service:
+    environment:
+      APP_ENV: production
+      RAG_DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL using the internal postgres host}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set the server-side OPENAI_API_KEY}
+    security_opt: ['no-new-privileges:true']
+  web:
+    security_opt: ['no-new-privileges:true']

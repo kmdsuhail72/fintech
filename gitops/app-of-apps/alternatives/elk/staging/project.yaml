@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: asteriq-elk-staging
+  namespace: argocd
+spec:
+  sourceRepos:
+    - https://github.com/REPLACE_OWNER/REPLACE_APPLICATION_REPOSITORY.git
+  destinations:
+    - server: https://REPLACE_STAGING_EKS_API_SERVER
+      namespace: monitoring
+    - server: https://REPLACE_STAGING_EKS_API_SERVER
+      namespace: logging-agents
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: ServiceAccount
+    - group: apps
+      kind: DaemonSet
+    - group: elasticsearch.k8s.elastic.co
+      kind: Elasticsearch
+    - group: kibana.k8s.elastic.co
+      kind: Kibana

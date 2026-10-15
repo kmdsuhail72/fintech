@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: secrets-reader
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_DEV_SECRETS_READER_ROLE_ARN
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: aws-secrets
+spec:
+  provider:
+    aws:
+      region: REPLACE_DEV_AWS_REGION
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: asteriq
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: REPLACE_DEV_ACM_CERTIFICATE_ARN
+spec:
+  tls:
+    - hosts:
+        - REPLACE_DEV_HOST
+  rules:
+    - host: REPLACE_DEV_HOST
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 8080
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: api-secrets
+spec:
+  data:
+    - secretKey: DATABASE_URL
+      remoteRef:
+        key: asteriq-dev/database-url
+    - secretKey: REDIS_URL
+      remoteRef:
+        key: asteriq-dev/redis-url
+    - secretKey: JWT_ACCESS_SECRET
+      remoteRef:
+        key: asteriq-dev/jwt
+    - secretKey: SMTP_URL
+      remoteRef:
+        key: asteriq-dev/smtp
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ai-service-secrets
+spec:
+  data:
+    - secretKey: RAG_DATABASE_URL
+      remoteRef:
+        key: asteriq-dev/rag-database-url
+    - secretKey: OPENAI_API_KEY
+      remoteRef:
+        key: asteriq-dev/openai
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: migration-secrets
+spec:
+  data:
+    - secretKey: DATABASE_URL
+      remoteRef:
+        key: asteriq-dev/migration-database-url

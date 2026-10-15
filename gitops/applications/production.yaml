@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: asteriq-production
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: asteriq
+    asteriq.ai/environment: production
+spec:
+  project: asteriq-production
+  sources:
+    - repoURL: https://github.com/REPLACE_OWNER/REPLACE_APPLICATION_REPOSITORY.git
+      targetRevision: REPLACE_APPROVED_APPLICATION_COMMIT
+      path: helm/asteriq-platform
+      helm:
+        releaseName: asteriq
+        valueFiles:
+          - values-production.yaml
+          - $values/environments/production/values.yaml
+    - repoURL: https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://REPLACE_PRODUCTION_EKS_API_SERVER
+    namespace: asteriq-production
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+      - PruneLast=true
+      - PrunePropagationPolicy=foreground
+      - FailOnSharedResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

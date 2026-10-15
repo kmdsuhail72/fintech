@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: asteriq-split-dev
+  namespace: argocd
+spec:
+  description: Asteriq development application tier only
+  sourceRepos:
+  - https://github.com/REPLACE_OWNER/REPLACE_APPLICATION_REPOSITORY.git
+  - https://github.com/REPLACE_OWNER/REPLACE_GITOPS_REPOSITORY.git
+  destinations:
+  - server: https://REPLACE_DEVELOPMENT_EKS_API_SERVER
+    namespace: asteriq-dev
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+  - group: apps
+    kind: Deployment
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: ServiceAccount
+  - group: autoscaling
+    kind: HorizontalPodAutoscaler
+  - group: policy
+    kind: PodDisruptionBudget
+  - group: networking.k8s.io
+    kind: Ingress
+  - group: batch
+    kind: Job
+  orphanedResources:
+    warn: true

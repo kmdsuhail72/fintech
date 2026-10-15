@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+resources:
+  - datasources.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: '1'
+configMapGenerator:
+  - name: grafana-asteriq-kubernetes
+    files:
+      - kubernetes.json=dashboards/kubernetes.json
+  - name: grafana-asteriq-application
+    files:
+      - application.json=dashboards/application.json
+  - name: grafana-asteriq-trading
+    files:
+      - trading.json=dashboards/trading.json
+  - name: grafana-asteriq-ai
+    files:
+      - ai.json=dashboards/ai.json
+  - name: grafana-asteriq-database
+    files:
+      - database.json=dashboards/database.json
+  - name: grafana-asteriq-slo
+    files:
+      - slo.json=dashboards/slo.json

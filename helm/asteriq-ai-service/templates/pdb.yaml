@@ -1,0 +1,14 @@
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "asteriq-ai-service.fullname" . }}
+  labels:
+    {{- include "asteriq-ai-service.labels" . | nindent 4 }}
+spec:
+  maxUnavailable: {{ .Values.pdb.maxUnavailable }}
+  unhealthyPodEvictionPolicy: {{ .Values.pdb.unhealthyPodEvictionPolicy }}
+  selector:
+    matchLabels:
+      {{- include "asteriq-ai-service.selectorLabels" . | nindent 6 }}
+{{- end }}

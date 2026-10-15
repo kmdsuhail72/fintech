@@ -1,0 +1,26 @@
+# Merge after helm/asteriq-platform/values-production.yaml.
+asteriq-web:
+  ingress:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: asteriq-production-eks-web
+      alb.ingress.kubernetes.io/security-groups: REPLACE_ALB_SECURITY_GROUP_ID
+      alb.ingress.kubernetes.io/manage-backend-security-group-rules: 'false'
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/certificate-arn: REPLACE_REGIONAL_CERTIFICATE_ARN
+      alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=180,deletion_protection.enabled=true
+      # WAF attachment is owned by edge Terraform, not Ingress annotations.
+  env:
+    API_UPSTREAM: http://api:3000
+asteriq-api:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: REPLACE_API_IRSA_ROLE_ARN
+  env:
+    TRUST_PROXY_HOPS: '3'
+    AWS_STS_REGIONAL_ENDPOINTS: regional
+asteriq-ai-service:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: REPLACE_AI_IRSA_ROLE_ARN
+  env:
+    AWS_STS_REGIONAL_ENDPOINTS: regional

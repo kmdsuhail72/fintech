@@ -1,0 +1,22 @@
+environment = "dev"
+region = "ap-south-1"
+account_id = "REPLACE_ACCOUNT_ID"
+vpc_cidr = "10.20.0.0/16"
+azs = ["ap-south-1a", "ap-south-1b"]
+zone_id = "REPLACE_EXISTING_ROUTE53_ZONE_ID"
+domain_name = "dev.example.com"
+auth_email_from = "notifications@example.com"
+nat_per_az = false
+desired_count = 1
+db_multi_az = false
+db_instance_class = "db.t4g.small"
+redis_node_type = "cache.t4g.small"
+redis_replicas = 0
+log_retention_days = 30
+redis_auth_token_version = 1
+# Replace with actual scanned image digests; do not use these example values.
+images = {
+  web = "REPLACE_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/asteriq-dev/web@sha256:REPLACE_DIGEST"
+  api = "REPLACE_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/asteriq-dev/api@sha256:REPLACE_DIGEST"
+  ai-service = "REPLACE_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/asteriq-dev/ai-service@sha256:REPLACE_DIGEST"
+}
