@@ -186,7 +186,7 @@ sequenceDiagram
   participant DB as PostgreSQL
   Client->>API: Order + bearer token + idempotency key
   API->>DB: Validate session and owned account
-  API->>DB: BEGIN; lock account/wallet
+  API->>DB: Begin transaction and lock account/wallet
   API->>DB: Check account-scoped idempotency key
   alt Matching request already completed
     DB-->>API: Original order
