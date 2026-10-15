@@ -107,7 +107,7 @@ jobs:
           timeout: 10m
       - name: Migrate and roll out verified image digests to ECS
         run: python scripts/ci/deploy_ecs.py release/release.json
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: production-security-and-deployment

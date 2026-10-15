@@ -110,7 +110,7 @@ jobs:
           python -m ruff check apps/ai-service/app apps/ai-service/tests scripts/ci --select E9,F63,F7,F82
       - name: Python tests including pgvector integration
         run: python -m pytest apps/ai-service/tests scripts/ci/tests -q -p no:cacheprovider --junitxml=python-results.xml
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: python-test-results
@@ -138,7 +138,7 @@ jobs:
           output: repository-security.json
           skip-dirs: .git,.runtime,.venv,node_modules,apps/ai-service/artifacts
           timeout: 10m
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: repository-security-report
